@@ -1,0 +1,133 @@
+export const PALACE_MAPPINGS = {
+  romance: {
+    id: 'romance',
+    label: 'Tình Duyên',
+    icon: '💕',
+    comparisons: [
+      {
+        id: 'menh_menh',
+        palaceA: 'Mệnh',
+        palaceB: 'Mệnh',
+        weight: 1,
+        category: 'core',
+        description: 'Bản mệnh đối bản mệnh: tính cách cơ bản có hòa hợp?',
+      },
+      {
+        id: 'phuthe_phuthe',
+        palaceA: 'Phu Thê',
+        palaceB: 'Phu Thê',
+        weight: 1,
+        category: 'core',
+        description: 'Cung Phu Thê đối chiếu: quan điểm hôn nhân',
+      },
+      {
+        id: 'menh_phuthe_cross',
+        palaceA: 'Mệnh',
+        palaceB: 'Phu Thê',
+        weight: 0.9,
+        category: 'cross',
+        description: 'Mệnh A có phù hợp mẫu người lý tưởng của B?',
+      },
+      {
+        id: 'phucduc_phucduc',
+        palaceA: 'Phúc Đức',
+        palaceB: 'Phúc Đức',
+        weight: 0.8,
+        category: 'support',
+        description: 'Phúc đức gia đình hai bên có tương đồng?',
+      },
+      {
+        id: 'tutuc_tutuc',
+        palaceA: 'Tử Tức',
+        palaceB: 'Tử Tức',
+        weight: 0.6,
+        category: 'support',
+        description: 'Quan điểm và vận con cái',
+      },
+      {
+        id: 'taibach_taibach',
+        palaceA: 'Tài Bạch',
+        palaceB: 'Tài Bạch',
+        weight: 0.5,
+        category: 'support',
+        description: 'Khả năng quản lý tài chính chung',
+      },
+      {
+        id: 'tatach_tatach',
+        palaceA: 'Tật Ách',
+        palaceB: 'Tật Ách',
+        weight: 0.4,
+        category: 'extra',
+        description: 'Sức khỏe và thể chất tương hỗ',
+      },
+    ],
+  },
+  business: {
+    id: 'business',
+    label: 'Làm Ăn',
+    icon: '💼',
+    comparisons: [
+      {
+        id: 'menh_menh',
+        palaceA: 'Mệnh',
+        palaceB: 'Mệnh',
+        weight: 1,
+        category: 'core',
+        description: 'Tính cách lãnh đạo và cách xử sự',
+      },
+      {
+        id: 'quanloc_quanloc',
+        palaceA: 'Quan Lộc',
+        palaceB: 'Quan Lộc',
+        weight: 1,
+        category: 'core',
+        description: 'Sự nghiệp và phong cách làm việc',
+      },
+      {
+        id: 'taibach_taibach',
+        palaceA: 'Tài Bạch',
+        palaceB: 'Tài Bạch',
+        weight: 1,
+        category: 'core',
+        description: 'Vận tài chính khi hợp tác',
+      },
+      {
+        id: 'menh_noboc_cross',
+        palaceA: 'Mệnh',
+        palaceB: 'Nô Bộc',
+        weight: 0.8,
+        category: 'cross',
+        description: 'A có phù hợp làm đối tác/nhân sự của B?',
+      },
+      {
+        id: 'noboc_noboc',
+        palaceA: 'Nô Bộc',
+        palaceB: 'Nô Bộc',
+        weight: 0.7,
+        category: 'support',
+        description: 'Khả năng vận hành đội nhóm',
+      },
+      {
+        id: 'thiendi_thiendi',
+        palaceA: 'Thiên Di',
+        palaceB: 'Thiên Di',
+        weight: 0.6,
+        category: 'support',
+        description: 'Giao tiếp bên ngoài và mở rộng quan hệ',
+      },
+      {
+        id: 'dientach_dientach',
+        palaceA: 'Điền Trạch',
+        palaceB: 'Điền Trạch',
+        weight: 0.5,
+        category: 'extra',
+        description: 'Tài sản dài hạn và tư duy tích lũy',
+      },
+    ],
+  },
+};
+
+export function getModeMapping(mode) {
+  return PALACE_MAPPINGS[mode] || PALACE_MAPPINGS.romance;
+}
+

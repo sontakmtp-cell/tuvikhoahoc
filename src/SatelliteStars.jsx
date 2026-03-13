@@ -3,6 +3,16 @@ import { useFrame } from '@react-three/fiber';
 import { Billboard, Text } from '@react-three/drei';
 import * as THREE from 'three';
 
+function normalizedSeed(seed) {
+  let hash = 2166136261;
+  const text = String(seed);
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return ((hash >>> 0) % 10000) / 10000;
+}
+
 /**
  * A single satellite (moon) orbiting around a planet.
  * Chính tinh = larger, brighter. Phụ tinh = smaller, dimmer.
@@ -14,14 +24,18 @@ const Satellite = ({ name, isMain, index, total, color, visible }) => {
 
   // orbit parameters - each satellite gets unique orbit
   const config = useMemo(() => {
+    const randA = normalizedSeed(`${name}-${index}-a`);
+    const randB = normalizedSeed(`${name}-${index}-b`);
+    const randC = normalizedSeed(`${name}-${index}-c`);
+
     const baseRadius = isMain ? 2.8 : 3.2 + index * 0.35;
     const speed = isMain ? 1.2 : 0.5 + (index * 0.15);
-    const tiltX = (Math.random() - 0.5) * 0.8; // random orbital tilt
-    const tiltZ = (Math.random() - 0.5) * 0.6;
+    const tiltX = (randA - 0.5) * 0.8;
+    const tiltZ = (randB - 0.5) * 0.6;
     const phase = (index / total) * Math.PI * 2; // spread satellites evenly
-    const size = isMain ? 0.35 : 0.12 + Math.random() * 0.08;
+    const size = isMain ? 0.35 : 0.12 + randC * 0.08;
     return { baseRadius, speed, tiltX, tiltZ, phase, size };
-  }, [isMain, index, total]);
+  }, [isMain, index, name, total]);
 
   useFrame((state) => {
     if (!groupRef.current) return;
@@ -79,7 +93,7 @@ const Satellite = ({ name, isMain, index, total, color, visible }) => {
             emissive="#FFD700"
             emissiveIntensity={0.5}
             transparent
-            opacity={0.1 * scaleRef.current}
+            opacity={0.1}
             side={THREE.BackSide}
           />
         </mesh>
@@ -98,7 +112,7 @@ const Satellite = ({ name, isMain, index, total, color, visible }) => {
           anchorY="top"
           outlineWidth={0.015}
           outlineColor="#000000"
-          fillOpacity={scaleRef.current}
+          fillOpacity={1}
         >
           {isMain ? `★ ${name}` : name}
         </Text>

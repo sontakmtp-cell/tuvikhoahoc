@@ -173,7 +173,6 @@ const ConnectionLabel = ({ getPointA, getPointB, text, color }) => {
 export default function ConnectionLines({ focusedId, palaces, showTamHop = true, showXungChieu = true }) {
   if (!focusedId) return null;
 
-  const total = palaces.length;
   const orbitingPalaces = palaces.filter(p => p.id !== MENH_ID);
   const totalOrbiting = orbitingPalaces.length;
 

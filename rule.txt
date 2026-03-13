@@ -1,0 +1,859 @@
+# KIẾN TRÚC & KẾ HOẠCH TÍNH NĂNG SO SÁNH TƯƠNG HỢP TỬ VI
+
+---
+
+## I. TỔNG QUAN TÍNH NĂNG
+
+### 1.1 Mô tả
+Người dùng upload **2 file JSON** (2 lá số tử vi), chọn **chế độ Tình Duyên** hoặc **Làm Ăn**, hệ thống tự động trích xuất thông tin từ các cung liên quan, tính toán điểm tương hợp/xung khắc dựa trên lý thuyết Tử Vi phương Đông, rồi hiển thị kết quả dưới dạng báo cáo chi tiết + trực quan 3D.
+
+### 1.2 Luồng hoạt động tổng quát
+
+```
+┌─────────────┐     ┌──────────────┐     ┌───────────────┐     ┌────────────────┐
+│ Upload 2 JSON│────▶│ Validate &   │────▶│ Chọn chế độ   │────▶│ Engine tính    │
+│ (Lá số A+B) │     │ Parse dữ liệu│     │ Tình Duyên /  │     │ toán tương hợp │
+└─────────────┘     └──────────────┘     │ Làm Ăn        │     └───────┬────────┘
+                                          └───────────────┘             │
+                    ┌──────────────────────────────────────────────────┘
+                    ▼
+        ┌───────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+        │ Báo cáo tổng hợp  │     │ Radar Chart      │     │ 3D Dual Scene    │
+        │ (điểm, luận giải) │     │ (so sánh trực    │     │ (2 hệ hành tinh │
+        │                   │     │  quan)           │     │  đối diện)       │
+        └───────────────────┘     └──────────────────┘     └──────────────────┘
+```
+
+---
+
+## II. KIẾN TRÚC MÃ NGUỒN
+
+### 2.1 Cấu trúc thư mục mới
+
+```
+D:/AI/tuvikhoahoc/src/
+│
+├── App.jsx                          # BỔ SUNG: routing/tab sang chế độ so sánh
+├── main.jsx
+│
+├── [Các file cũ giữ nguyên]
+│   ├── TuViScene.jsx
+│   ├── PalaceNav.jsx
+│   ├── ConnectionLines.jsx
+│   ├── SatelliteStars.jsx
+│   ├── ThemeContext.jsx
+│   ├── ThemeSelector.jsx
+│   ├── relationships.js
+│   ├── starScores.js
+│   ├── orbitTime.js
+│   └── data.js
+│
+├── compatibility/                    # ★ THƯ MỤC MỚI
+│   ├── CompatibilityPage.jsx         # Trang chính của tính năng so sánh
+│   ├── DualUploader.jsx              # Component upload 2 file JSON
+│   ├── ModeSelector.jsx              # Chọn Tình Duyên / Làm Ăn
+│   ├── CompatibilityReport.jsx       # Hiển thị báo cáo kết quả
+│   ├── CompatibilityRadar.jsx        # Biểu đồ radar so sánh
+│   ├── PalaceComparisonCard.jsx      # Card so sánh từng cặp cung
+│   ├── DualChartScene.jsx            # Scene 3D hiển thị 2 lá số
+│   ├── CompatibilityLines3D.jsx      # Đường nối tương hợp/xung khắc 3D
+│   │
+│   ├── engine/                       # ★ ENGINE TÍNH TOÁN
+│   │   ├── compatibilityEngine.js    # Bộ xử lý chính, điều phối
+│   │   ├── elementRelations.js       # Ngũ Hành tương sinh/khắc/tỷ hòa
+│   │   ├── starCompatibility.js      # Phân loại sao & tính tương tác
+│   │   ├── palaceMapping.js          # Ánh xạ cung theo từng chế độ
+│   │   ├── scoringWeights.js         # Trọng số điểm theo chế độ
+│   │   └── interpretationRules.js    # Quy tắc sinh luận giải văn bản
+│   │
+│   └── data/
+│       ├── starCatalog.js            # Bảng phân loại 100+ sao Cát/Hung
+│       ├── elementMatrix.js          # Ma trận tương tác Ngũ Hành
+│       └── interpretationTemplates.js # Mẫu câu luận giải
+│
+├── shared/                           # ★ TÁCH DÙNG CHUNG
+│   ├── jsonValidator.js              # Validate cấu trúc JSON (dùng chung)
+│   └── palaceUtils.js                # Hàm tiện ích liên quan cung
+│
+└── index.css                         # BỔ SUNG: styles cho compatibility
+```
+
+### 2.2 Sơ đồ phụ thuộc module
+
+```
+CompatibilityPage.jsx
+ ├── DualUploader.jsx
+ │    └── shared/jsonValidator.js
+ ├── ModeSelector.jsx
+ ├── CompatibilityReport.jsx
+ │    ├── CompatibilityRadar.jsx
+ │    └── PalaceComparisonCard.jsx
+ ├── DualChartScene.jsx
+ │    ├── CompatibilityLines3D.jsx
+ │    ├── SatelliteStars.jsx (tái sử dụng)
+ │    └── orbitTime.js (tái sử dụng)
+ └── engine/compatibilityEngine.js
+      ├── elementRelations.js
+      ├── starCompatibility.js
+      ├── palaceMapping.js
+      ├── scoringWeights.js
+      └── interpretationRules.js
+           └── data/interpretationTemplates.js
+```
+
+---
+
+## III. THIẾT KẾ CHI TIẾT ENGINE TÍNH TOÁN
+
+### 3.1 Ngũ Hành Tương Tác (`elementRelations.js`)
+
+```javascript
+// Ma trận Ngũ Hành
+const NGU_HANH = ['Kim', 'Thủy', 'Mộc', 'Hỏa', 'Thổ'];
+
+// Tương Sinh (生): sinh ra, hỗ trợ
+const TUONG_SINH = {
+  'Kim': 'Thủy',   // Kim sinh Thủy
+  'Thủy': 'Mộc',   // Thủy sinh Mộc
+  'Mộc': 'Hỏa',    // Mộc sinh Hỏa
+  'Hỏa': 'Thổ',    // Hỏa sinh Thổ
+  'Thổ': 'Kim'      // Thổ sinh Kim
+};
+
+// Tương Khắc (克): khắc chế, xung đột
+const TUONG_KHAC = {
+  'Kim': 'Mộc',   // Kim khắc Mộc
+  'Mộc': 'Thổ',   // Mộc khắc Thổ
+  'Thổ': 'Thủy',  // Thổ khắc Thủy
+  'Thủy': 'Hỏa',  // Thủy khắc Hỏa
+  'Hỏa': 'Kim'    // Hỏa khắc Kim
+};
+
+/**
+ * Trả về quan hệ giữa 2 hành
+ * @returns { type: 'sinh'|'khac'|'hoa', score: number, direction: string }
+ */
+export function getElementRelation(elementA, elementB) {
+  if (elementA === elementB) 
+    return { type: 'hoa', score: +1.0, label: 'Tỷ Hòa (cùng hành)' };
+  
+  if (TUONG_SINH[elementA] === elementB) 
+    return { type: 'sinh', score: +2.0, label: `${elementA} sinh ${elementB}`, 
+             direction: 'A→B' };
+  
+  if (TUONG_SINH[elementB] === elementA) 
+    return { type: 'sinh', score: +1.5, label: `${elementB} sinh ${elementA}`, 
+             direction: 'B→A' };
+  
+  if (TUONG_KHAC[elementA] === elementB) 
+    return { type: 'khac', score: -2.0, label: `${elementA} khắc ${elementB}`, 
+             direction: 'A→B' };
+  
+  if (TUONG_KHAC[elementB] === elementA) 
+    return { type: 'khac', score: -1.5, label: `${elementB} khắc ${elementA}`, 
+             direction: 'B→A' };
+  
+  return { type: 'trung', score: 0, label: 'Không tương tác trực tiếp' };
+}
+```
+
+### 3.2 Phân loại Sao (`starCatalog.js`)
+
+```javascript
+export const STAR_CATALOG = {
+  // ══════ CHÍNH TINH ══════
+  'Tử Vi':      { group: 'chinh', nature: 'cat', power: 10, element: 'Thổ',
+                   meaning: 'Đế tinh, quyền lực, lãnh đạo' },
+  'Thiên Cơ':   { group: 'chinh', nature: 'cat', power: 7, element: 'Mộc',
+                   meaning: 'Mưu trí, linh hoạt, biến hóa' },
+  'Thái Dương':  { group: 'chinh', nature: 'cat', power: 9, element: 'Hỏa',
+                   meaning: 'Quang minh, hào phóng, nam tính' },
+  'Vũ Khúc':    { group: 'chinh', nature: 'cat', power: 8, element: 'Kim',
+                   meaning: 'Tài chính, quả đoán, cứng rắn' },
+  'Thiên Đồng':  { group: 'chinh', nature: 'cat', power: 6, element: 'Thủy',
+                   meaning: 'Phúc đức, an nhàn, nhu hòa' },
+  'Liêm Trinh':  { group: 'chinh', nature: 'hung', power: 7, element: 'Hỏa',
+                   meaning: 'Chính trực nhưng cô độc' },
+  'Thiên Phủ':   { group: 'chinh', nature: 'cat', power: 9, element: 'Thổ',
+                   meaning: 'Kho tàng, ổn định, bảo thủ' },
+  'Thái Âm':    { group: 'chinh', nature: 'cat', power: 8, element: 'Thủy',
+                   meaning: 'Nữ tính, tài chính, nghệ thuật' },
+  'Tham Lang':   { group: 'chinh', nature: 'trung', power: 7, element: 'Thủy',
+                   meaning: 'Đa tài, đa dục, giao thiệp' },
+  'Cự Môn':     { group: 'chinh', nature: 'trung', power: 7, element: 'Thủy',
+                   meaning: 'Khẩu tài, thị phi, phân tích' },
+  'Thiên Tướng': { group: 'chinh', nature: 'cat', power: 7, element: 'Thủy',
+                   meaning: 'Phò tá, trung thành, ấn tín' },
+  'Thiên Lương': { group: 'chinh', nature: 'cat', power: 8, element: 'Mộc',
+                   meaning: 'Bác ái, trường thọ, che chở' },
+  'Thất Sát':   { group: 'chinh', nature: 'hung', power: 9, element: 'Kim',
+                   meaning: 'Uy quyền, quyết liệt, cô đơn' },
+  'Phá Quân':   { group: 'chinh', nature: 'hung', power: 8, element: 'Thủy',
+                   meaning: 'Phá cách, tiên phong, bất ổn' },
+  
+  // ══════ PHỤ TINH CÁT ══════
+  'Tả Phụ':     { group: 'phu', nature: 'cat', power: 6, element: 'Thổ' },
+  'Hữu Bật':    { group: 'phu', nature: 'cat', power: 6, element: 'Thủy' },
+  'Văn Xương':   { group: 'phu', nature: 'cat', power: 5, element: 'Kim' },
+  'Văn Khúc':    { group: 'phu', nature: 'cat', power: 5, element: 'Thủy' },
+  'Lộc Tồn':    { group: 'phu', nature: 'cat', power: 7, element: 'Thổ' },
+  'Thiên Mã':    { group: 'phu', nature: 'cat', power: 5, element: 'Hỏa' },
+  'Thiên Khôi':  { group: 'phu', nature: 'cat', power: 5, element: 'Hỏa' },
+  'Thiên Việt':  { group: 'phu', nature: 'cat', power: 5, element: 'Hỏa' },
+  'Hóa Lộc':    { group: 'hoa', nature: 'cat', power: 8, element: null },
+  'Hóa Quyền':  { group: 'hoa', nature: 'cat', power: 7, element: null },
+  'Hóa Khoa':   { group: 'hoa', nature: 'cat', power: 6, element: null },
+
+  // ══════ PHỤ TINH HUNG ══════
+  'Kình Dương':  { group: 'sat', nature: 'hung', power: 7, element: 'Kim' },
+  'Đà La':      { group: 'sat', nature: 'hung', power: 6, element: 'Kim' },
+  'Hỏa Tinh':   { group: 'sat', nature: 'hung', power: 6, element: 'Hỏa' },
+  'Linh Tinh':   { group: 'sat', nature: 'hung', power: 6, element: 'Hỏa' },
+  'Thiên Không': { group: 'sat', nature: 'hung', power: 5, element: 'Hỏa' },
+  'Địa Kiếp':   { group: 'sat', nature: 'hung', power: 5, element: 'Hỏa' },
+  'Hóa Kỵ':    { group: 'hoa', nature: 'hung', power: 7, element: null },
+  // ... thêm các sao khác
+};
+
+// Hàm lookup: nếu sao không có trong catalog → mặc định trung tính
+export function getStarInfo(starName) {
+  return STAR_CATALOG[starName] || { 
+    group: 'phu', nature: 'trung', power: 3, element: null 
+  };
+}
+```
+
+### 3.3 Ánh xạ Cung theo Chế độ (`palaceMapping.js`)
+
+```javascript
+/**
+ * Mỗi chế độ định nghĩa:
+ * - Cặp cung nào so sánh với nhau
+ * - Trọng số (weight) của từng cặp
+ * - Loại so sánh: 'direct' (cùng tên), 'cross' (chéo)
+ */
+
+export const PALACE_MAPPINGS = {
+  // ═══════════════════════════════════════
+  // CHẾ ĐỘ TÌNH DUYÊN
+  // ═══════════════════════════════════════
+  romance: {
+    label: 'Tình Duyên',
+    icon: '💕',
+    comparisons: [
+      {
+        id: 'menh_menh',
+        palaceA: 'Mệnh',       // id: 1
+        palaceB: 'Mệnh',       // id: 1
+        weight: 1.0,
+        category: 'core',
+        description: 'Bản mệnh đối bản mệnh: tính cách cơ bản có hòa hợp?'
+      },
+      {
+        id: 'phuthe_phuthe',
+        palaceA: 'Phu Thê',    // id: 11
+        palaceB: 'Phu Thê',    // id: 11
+        weight: 1.0,
+        category: 'core',
+        description: 'Cung Phu Thê đối chiếu: quan điểm hôn nhân'
+      },
+      {
+        id: 'menh_phuthe_cross',
+        palaceA: 'Mệnh',       // A.Mệnh
+        palaceB: 'Phu Thê',    // B.Phu Thê
+        weight: 0.9,
+        category: 'cross',
+        description: 'Mệnh A có phù hợp mẫu người lý tưởng của B?'
+      },
+      {
+        id: 'phucduc_phucduc',
+        palaceA: 'Phúc Đức',   // id: 3
+        palaceB: 'Phúc Đức',   // id: 3
+        weight: 0.8,
+        category: 'support',
+        description: 'Phúc đức gia đình hai bên có tương đồng?'
+      },
+      {
+        id: 'tutuc_tutuc',
+        palaceA: 'Tử Tức',     // id: 10
+        palaceB: 'Tử Tức',     // id: 10
+        weight: 0.6,
+        category: 'support',
+        description: 'Quan điểm và vận con cái'
+      },
+      {
+        id: 'taibach_taibach',
+        palaceA: 'Tài Bạch',   // id: 9
+        palaceB: 'Tài Bạch',   // id: 9
+        weight: 0.5,
+        category: 'support',
+        description: 'Tài chính chung khi kết hợp'
+      },
+      {
+        id: 'tatach_tatach',
+        palaceA: 'Tật Ách',    // id: 8
+        palaceB: 'Tật Ách',    // id: 8
+        weight: 0.4,
+        category: 'extra',
+        description: 'Sức khỏe và thể chất tương hỗ'
+      }
+    ]
+  },
+
+  // ═══════════════════════════════════════
+  // CHẾ ĐỘ LÀM ĂN
+  // ═══════════════════════════════════════
+  business: {
+    label: 'Làm Ăn',
+    icon: '💼',
+    comparisons: [
+      {
+        id: 'menh_menh',
+        palaceA: 'Mệnh',
+        palaceB: 'Mệnh',
+        weight: 1.0,
+        category: 'core',
+        description: 'Tính cách lãnh đạo và cách xử sự'
+      },
+      {
+        id: 'quanloc_quanloc',
+        palaceA: 'Quan Lộc',   // id: 5
+        palaceB: 'Quan Lộc',   // id: 5
+        weight: 1.0,
+        category: 'core',
+        description: 'Sự nghiệp và phong cách làm việc'
+      },
+      {
+        id: 'taibach_taibach',
+        palaceA: 'Tài Bạch',   // id: 9
+        palaceB: 'Tài Bạch',   // id: 9
+        weight: 1.0,
+        category: 'core',
+        description: 'Vận tài chính khi hợp tác'
+      },
+      {
+        id: 'menh_noboc_cross',
+        palaceA: 'Mệnh',
+        palaceB: 'Nô Bộc',    // id: 6
+        weight: 0.8,
+        category: 'cross',
+        description: 'A có phù hợp làm đối tác/nhân viên của B?'
+      },
+      {
+        id: 'noboc_noboc',
+        palaceA: 'Nô Bộc',
+        palaceB: 'Nô Bộc',
+        weight: 0.7,
+        category: 'support',
+        description: 'Khả năng quản lý đối tác và nhân sự'
+      },
+      {
+        id: 'thiendi_thiendi',
+        palaceA: 'Thiên Di',   // id: 7
+        palaceB: 'Thiên Di',   // id: 7
+        weight: 0.6,
+        category: 'support',
+        description: 'Giao tiếp bên ngoài và mở rộng'
+      },
+      {
+        id: 'dientach_dientach',
+        palaceA: 'Điền Trạch', // id: 4
+        palaceB: 'Điền Trạch', // id: 4
+        weight: 0.5,
+        category: 'extra',
+        description: 'Bất động sản và tài sản cố định'
+      }
+    ]
+  }
+};
+```
+
+### 3.4 Bộ Engine Chính (`compatibilityEngine.js`)
+
+```javascript
+import { getElementRelation } from './elementRelations';
+import { getStarInfo } from '../data/starCatalog';
+import { PALACE_MAPPINGS } from './palaceMapping';
+
+/**
+ * HÀM CHÍNH: Tính toán tương hợp giữa 2 lá số
+ * 
+ * @param {Array} chartA - 12 cung của người A
+ * @param {Array} chartB - 12 cung của người B
+ * @param {'romance'|'business'} mode
+ * @returns {Object} Kết quả tổng hợp
+ */
+export function calculateCompatibility(chartA, chartB, mode) {
+  const mapping = PALACE_MAPPINGS[mode];
+  const results = [];
+  
+  for (const comp of mapping.comparisons) {
+    const pA = findPalace(chartA, comp.palaceA);
+    const pB = findPalace(chartB, comp.palaceB);
+    
+    // 1) So sánh Ngũ Hành
+    const elementResult = analyzeElements(pA, pB);
+    
+    // 2) So sánh Sao
+    const starResult = analyzeStars(pA.stars, pB.stars);
+    
+    // 3) So sánh chéo: sao cung A tương tác với hành cung B
+    const crossResult = analyzeCrossInteraction(pA, pB);
+    
+    // 4) Tổng hợp điểm cặp cung
+    const pairScore = computePairScore(elementResult, starResult, crossResult);
+    
+    // 5) Luận giải văn bản
+    const interpretation = generateInterpretation(
+      comp, elementResult, starResult, pairScore, mode
+    );
+    
+    results.push({
+      comparisonId: comp.id,
+      palaceA: { name: pA.name, element: pA.element, stars: pA.stars },
+      palaceB: { name: pB.name, element: pB.element, stars: pB.stars },
+      weight: comp.weight,
+      category: comp.category,
+      description: comp.description,
+      elementResult,
+      starResult,
+      crossResult,
+      pairScore,        // -10 đến +10
+      weightedScore: pairScore * comp.weight,
+      interpretation
+    });
+  }
+  
+  // Tổng hợp toàn cục
+  const overall = computeOverallScore(results);
+  const summary = generateOverallSummary(overall, mode);
+  
+  return {
+    mode,
+    modeLabel: mapping.label,
+    comparisons: results,
+    overall,        // { score, percentage, level, ... }
+    summary,        // Văn bản luận giải tổng hợp
+    timestamp: new Date().toISOString()
+  };
+}
+
+// ─── Phân tích Ngũ Hành ───
+function analyzeElements(palaceA, palaceB) {
+  const relation = getElementRelation(palaceA.element, palaceB.element);
+  return {
+    elementA: palaceA.element,
+    elementB: palaceB.element,
+    ...relation
+  };
+}
+
+// ─── Phân tích Sao ───
+function analyzeStars(starsA, starsB) {
+  const infoA = starsA.map(s => ({ name: s, ...getStarInfo(s) }));
+  const infoB = starsB.map(s => ({ name: s, ...getStarInfo(s) }));
+  
+  // Sao trùng (cùng xuất hiện ở 2 cung)
+  const commonStars = starsA.filter(s => starsB.includes(s));
+  
+  // Đếm Cát/Hung mỗi bên
+  const catA = infoA.filter(s => s.nature === 'cat');
+  const hungA = infoA.filter(s => s.nature === 'hung');
+  const catB = infoB.filter(s => s.nature === 'cat');
+  const hungB = infoB.filter(s => s.nature === 'hung');
+  
+  // Tính điểm tương tác sao
+  let starScore = 0;
+  
+  // Nhiều Cát tinh cả 2 bên → cộng hưởng tốt
+  starScore += Math.min(catA.length, catB.length) * 0.5;
+  
+  // Nhiều Hung tinh cả 2 bên → cộng hưởng xấu
+  starScore -= Math.min(hungA.length, hungB.length) * 0.4;
+  
+  // Sao trùng Cát → bonus
+  commonStars.forEach(s => {
+    const info = getStarInfo(s);
+    if (info.nature === 'cat') starScore += 0.8;
+    if (info.nature === 'hung') starScore -= 0.6;
+  });
+  
+  // Kiểm tra cặp sao đặc biệt (Nhật-Nguyệt, Tả-Hữu, ...)
+  const specialPairs = checkSpecialStarPairs(infoA, infoB);
+  starScore += specialPairs.bonus;
+  
+  return {
+    starsA: infoA,
+    starsB: infoB,
+    commonStars,
+    catCountA: catA.length,
+    catCountB: catB.length,
+    hungCountA: hungA.length,
+    hungCountB: hungB.length,
+    specialPairs: specialPairs.pairs,
+    score: Math.max(-5, Math.min(5, starScore))
+  };
+}
+
+// ─── Cặp Sao Đặc Biệt ───
+function checkSpecialStarPairs(starsA, starsB) {
+  const SPECIAL_PAIRS = [
+    { a: 'Thái Dương', b: 'Thái Âm',  bonus: +2.0, 
+      label: 'Nhật Nguyệt giao huy - Âm Dương hòa hợp' },
+    { a: 'Tả Phụ',    b: 'Hữu Bật',   bonus: +1.5, 
+      label: 'Tả Hữu phò trì - Hỗ trợ đắc lực' },
+    { a: 'Văn Xương',  b: 'Văn Khúc',   bonus: +1.5, 
+      label: 'Song Văn hội tụ - Trí tuệ bổ sung' },
+    { a: 'Thiên Khôi', b: 'Thiên Việt',  bonus: +1.0, 
+      label: 'Quý nhân tương trợ' },
+    { a: 'Kình Dương',  b: 'Đà La',     bonus: -1.5, 
+      label: 'Song Sát hội tụ - Xung đột gay gắt' },
+    { a: 'Hỏa Tinh',   b: 'Linh Tinh',  bonus: -1.0, 
+      label: 'Song Hỏa - Nóng nảy cả hai bên' },
+    { a: 'Tử Vi',      b: 'Thiên Phủ',  bonus: +2.0, 
+      label: 'Đế Phủ triều viên - Vương giả hội' },
+    { a: 'Thất Sát',   b: 'Phá Quân',   bonus: -1.5, 
+      label: 'Sát Phá - Biến động mạnh' },
+  ];
+  
+  const namesA = starsA.map(s => s.name);
+  const namesB = starsB.map(s => s.name);
+  let totalBonus = 0;
+  const foundPairs = [];
+  
+  for (const pair of SPECIAL_PAIRS) {
+    if ((namesA.includes(pair.a) && namesB.includes(pair.b)) ||
+        (namesA.includes(pair.b) && namesB.includes(pair.a))) {
+      totalBonus += pair.bonus;
+      foundPairs.push(pair);
+    }
+  }
+  
+  return { bonus: totalBonus, pairs: foundPairs };
+}
+
+// ─── Tương tác Chéo ───
+function analyzeCrossInteraction(palaceA, palaceB) {
+  // Sao của A có hành tương sinh/khắc với hành cung B?
+  let crossScore = 0;
+  const details = [];
+  
+  for (const starName of palaceA.stars) {
+    const star = getStarInfo(starName);
+    if (star.element) {
+      const rel = getElementRelation(star.element, palaceB.element);
+      if (rel.type === 'sinh') {
+        crossScore += 0.3;
+        details.push(`${starName}(${star.element}) sinh ${palaceB.element}`);
+      } else if (rel.type === 'khac') {
+        crossScore -= 0.3;
+        details.push(`${starName}(${star.element}) khắc ${palaceB.element}`);
+      }
+    }
+  }
+  
+  return { score: Math.max(-3, Math.min(3, crossScore)), details };
+}
+
+// ─── Tổng hợp điểm cặp ───
+function computePairScore(elementResult, starResult, crossResult) {
+  const raw = (elementResult.score * 2.0) + 
+              (starResult.score * 1.5) + 
+              (crossResult.score * 0.5);
+  return Math.max(-10, Math.min(10, raw));
+}
+
+// ─── Tổng hợp toàn cục ───
+function computeOverallScore(results) {
+  const totalWeight = results.reduce((s, r) => s + r.weight, 0);
+  const weightedSum = results.reduce((s, r) => s + r.weightedScore, 0);
+  const rawScore = weightedSum / totalWeight; // -10 → +10
+  
+  // Chuyển sang phần trăm: 0% → 100%
+  const percentage = Math.round(((rawScore + 10) / 20) * 100);
+  
+  // Phân loại
+  let level, emoji, color;
+  if (percentage >= 85) { 
+    level = 'Thiên Tác Chi Hợp'; emoji = '🌟'; color = '#FFD700'; 
+  } else if (percentage >= 70) { 
+    level = 'Rất Tương Hợp'; emoji = '💚'; color = '#4CAF50'; 
+  } else if (percentage >= 55) { 
+    level = 'Tương Đối Hợp'; emoji = '💛'; color = '#FF9800'; 
+  } else if (percentage >= 40) { 
+    level = 'Bình Thường'; emoji = '⚖️'; color = '#9E9E9E'; 
+  } else if (percentage >= 25) { 
+    level = 'Có Xung Khắc'; emoji = '⚠️'; color = '#FF5722'; 
+  } else { 
+    level = 'Xung Khắc Nặng'; emoji = '💔'; color = '#F44336'; 
+  }
+  
+  return { rawScore, percentage, level, emoji, color, totalWeight };
+}
+```
+
+### 3.5 Hệ thống Luận Giải (`interpretationRules.js`)
+
+```javascript
+// Template-based interpretation generation
+export function generateInterpretation(comp, elementResult, starResult, score, mode) {
+  const parts = [];
+  
+  // 1) Luận về Ngũ Hành
+  if (elementResult.type === 'sinh') {
+    parts.push(`Hành ${elementResult.label}: đây là mối quan hệ tương sinh, ` +
+      `${mode === 'romance' ? 'hai người bổ trợ cho nhau về tình cảm' : 
+        'hợp tác kinh doanh có sự hỗ trợ tự nhiên'}.`);
+  } else if (elementResult.type === 'khac') {
+    parts.push(`Hành ${elementResult.label}: có sự xung khắc, ` +
+      `${mode === 'romance' ? 'cần sự nhường nhịn và thấu hiểu' : 
+        'cần phân công rõ vai trò để tránh mâu thuẫn'}.`);
+  } else if (elementResult.type === 'hoa') {
+    parts.push(`Cùng hành ${elementResult.elementA}: đồng điệu và thấu hiểu, ` +
+      `nhưng cũng có thể thiếu sự bổ sung.`);
+  }
+  
+  // 2) Luận về Sao trùng
+  if (starResult.commonStars.length > 0) {
+    parts.push(`Có ${starResult.commonStars.length} sao trùng: ` +
+      `${starResult.commonStars.join(', ')} — cho thấy sự đồng điệu về vận mệnh.`);
+  }
+  
+  // 3) Luận về cặp sao đặc biệt
+  for (const pair of starResult.specialPairs) {
+    parts.push(`★ ${pair.label}.`);
+  }
+  
+  // 4) Luận tổng theo score
+  if (score > 5) {
+    parts.push(`Tổng quan: Cặp cung này rất hòa hợp, là điểm sáng trong mối quan hệ.`);
+  } else if (score > 0) {
+    parts.push(`Tổng quan: Cặp cung này có xu hướng tích cực, thuận lợi hơn bất lợi.`);
+  } else if (score > -5) {
+    parts.push(`Tổng quan: Cặp cung này có một số thử thách cần vượt qua.`);
+  } else {
+    parts.push(`Tổng quan: Cặp cung này tiềm ẩn xung đột, cần nỗ lực đặc biệt.`);
+  }
+  
+  return parts.join(' ');
+}
+
+export function generateOverallSummary(overall, mode) {
+  // ... tương tự, sinh luận giải tổng hợp dựa trên overall.level
+}
+```
+
+---
+
+## IV. THIẾT KẾ GIAO DIỆN (UI/UX)
+
+### 4.1 Bố cục tổng thể
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  [☰ Menu]   TỬ VI 3D    [Xem Lá Số] [So Sánh ★]       │ ← Tab mới
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌─── UPLOAD ──────────────────────────────────────────┐ │
+│  │  ┌──────────────┐       ┌──────────────┐            │ │
+│  │  │  📂 Lá Số A  │       │  📂 Lá Số B  │            │ │
+│  │  │  [Chọn file]  │       │  [Chọn file]  │            │ │
+│  │  │  ✅ Đã tải   │       │  ✅ Đã tải   │            │ │
+│  │  │  Quý Dậu-Nam │       │  Canh Tý-Nữ  │            │ │
+│  │  └──────────────┘       └──────────────┘            │ │
+│  │                                                      │ │
+│  │  Chế độ: [💕 Tình Duyên ▼]  [🔍 Phân Tích]         │ │
+│  └──────────────────────────────────────────────────────┘ │
+│                                                          │
+│  ┌─── KẾT QUẢ ────────────────────────────────────────┐ │
+│  │                                                      │ │
+│  │  🌟 78% - RẤT TƯƠNG HỢP                            │ │
+│  │  ════════════════════════════                        │ │
+│  │                                                      │ │
+│  │  [Tổng Quan] [Chi Tiết Cung] [3D View] [Radar]     │ │
+│  │                                                      │ │
+│  │  ┌── Tổng Quan ──────────────────────────────────┐  │ │
+│  │  │ Hai lá số có mối quan hệ tương sinh...        │  │ │
+│  │  │ Điểm mạnh: Cung Mệnh hòa hợp, Phu Thê...    │  │ │
+│  │  │ Điểm yếu: Tài Bạch có xung khắc nhẹ...       │  │ │
+│  │  └───────────────────────────────────────────────┘  │ │
+│  │                                                      │ │
+│  │  ┌── Chi Tiết Từng Cặp Cung ────────────────────┐  │ │
+│  │  │ ┌─────────────────────────────────────────┐   │  │ │
+│  │  │ │ Mệnh ↔ Mệnh          ███████░░ 8.2/10  │   │  │ │
+│  │  │ │ Hỏa ←sinh→ Thổ                          │   │  │ │
+│  │  │ │ ★ Nhật Nguyệt giao huy                  │   │  │ │
+│  │  │ │ [Xem chi tiết ▼]                        │   │  │ │
+│  │  │ └─────────────────────────────────────────┘   │  │ │
+│  │  │ ┌─────────────────────────────────────────┐   │  │ │
+│  │  │ │ Phu Thê ↔ Phu Thê     ██████░░░ 6.5/10 │   │  │ │
+│  │  │ │ ...                                      │   │  │ │
+│  │  │ └─────────────────────────────────────────┘   │  │ │
+│  │  └───────────────────────────────────────────────┘  │ │
+│  └──────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────┘
+```
+
+### 4.2 3D Dual View
+
+```
+┌──────────────────────────────────────────────────────┐
+│                    Canvas 3D                          │
+│                                                      │
+│    ☀️ Hệ A                     🌙 Hệ B             │
+│        ○                            ○                │
+│      ○   ○                        ○   ○              │
+│    ○  🔴  ○ ────────────── ○  🔵  ○             │
+│      ○   ○   đường tương    ○   ○              │
+│        ○     hợp/xung khắc     ○                │
+│                                                      │
+│  [Xanh = Tương Hợp]  [Đỏ = Xung Khắc]              │
+│  [Vàng = Trung Tính]                                 │
+└──────────────────────────────────────────────────────┘
+```
+
+---
+
+## V. KẾ HOẠCH THỰC HIỆN CHI TIẾT
+
+### GIAI ĐOẠN 1: NỀN TẢNG (3–4 ngày)
+**Mục tiêu:** Xây dựng cơ sở hạ tầng, chuyển đổi App sang dạng multi-view
+
+| Task | File | Mô tả | Ước lượng |
+|------|------|-------|-----------|
+| 1.1 | `App.jsx` | Thêm state `viewMode: 'single' \| 'compare'`, render tab navigation | 0.5 ngày |
+| 1.2 | `shared/jsonValidator.js` | Tách logic validate JSON ra module dùng chung, hỗ trợ cả upload đơn và upload đôi | 0.5 ngày |
+| 1.3 | `shared/palaceUtils.js` | Hàm tìm cung theo tên/id, normalize tên sao (xử lý dấu, viết hoa) | 0.5 ngày |
+| 1.4 | `compatibility/CompatibilityPage.jsx` | Scaffold trang so sánh (placeholder), nhận 2 dataset + mode | 0.5 ngày |
+| 1.5 | `compatibility/DualUploader.jsx` | Component upload 2 file, hiển thị trạng thái (chưa tải / đang tải / thành công / lỗi), preview tên lá số | 1 ngày |
+| 1.6 | `compatibility/ModeSelector.jsx` | Toggle giữa Tình Duyên / Làm Ăn, animation chuyển đổi | 0.5 ngày |
+| 1.7 | `index.css` | Bổ sung styles cho dual uploader, mode selector, tab navigation | 0.5 ngày |
+
+**Deliverable GĐ1:** Người dùng có thể chuyển sang tab So Sánh, upload 2 file JSON, chọn chế độ → nhận thông báo "Dữ liệu hợp lệ, sẵn sàng phân tích".
+
+---
+
+### GIAI ĐOẠN 2: ENGINE TÍNH TOÁN (4–5 ngày)
+**Mục tiêu:** Xây dựng toàn bộ logic tính toán tương hợp
+
+| Task | File | Mô tả | Ước lượng |
+|------|------|-------|-----------|
+| 2.1 | `engine/elementRelations.js` | Implement bảng Ngũ Hành, hàm `getElementRelation()` | 0.5 ngày |
+| 2.2 | `data/starCatalog.js` | Nhập liệu 80–100 sao, phân loại Cát/Hung/Trung, gán Ngũ Hành, power | 1.5 ngày |
+| 2.3 | `data/elementMatrix.js` | Ma trận 5×5 tương tác hành (dùng cho tra cứu nhanh) | 0.5 ngày |
+| 2.4 | `engine/starCompatibility.js` | Hàm `analyzeStars()`, `checkSpecialStarPairs()`, phân tích tương tác sao | 1 ngày |
+| 2.5 | `engine/palaceMapping.js` | Định nghĩa cặp cung + trọng số cho 2 chế độ | 0.5 ngày |
+| 2.6 | `engine/scoringWeights.js` | Hệ số tổng hợp, normalize điểm, chuyển đổi % | 0.3 ngày |
+| 2.7 | `engine/compatibilityEngine.js` | Hàm chính `calculateCompatibility()`, orchestrate toàn bộ | 1 ngày |
+| 2.8 | Unit test | Viết test cases cho engine với dữ liệu mẫu | 0.5 ngày |
+
+**Deliverable GĐ2:** Engine chạy đúng với input 2 mảng JSON → output object chứa điểm, phân loại, chi tiết từng cặp cung. Console.log xác nhận kết quả hợp lý.
+
+---
+
+### GIAI ĐOẠN 3: LUẬN GIẢI VĂN BẢN (2–3 ngày)
+**Mục tiêu:** Sinh ra văn bản luận giải có ý nghĩa
+
+| Task | File | Mô tả | Ước lượng |
+|------|------|-------|-----------|
+| 3.1 | `data/interpretationTemplates.js` | Soạn 50–80 mẫu câu luận giải cho các tình huống (sinh/khắc, cát/hung, chế độ) | 1.5 ngày |
+| 3.2 | `engine/interpretationRules.js` | `generateInterpretation()` cho từng cặp cung, `generateOverallSummary()` tổng hợp | 1 ngày |
+| 3.3 | | Tinh chỉnh giọng văn theo chế độ (Tình Duyên → thơ mộng, Làm Ăn → phân tích) | 0.5 ngày |
+
+**Deliverable GĐ3:** Mỗi cặp cung và tổng thể đều có đoạn luận giải 3–5 câu, đọc tự nhiên, phù hợp ngữ cảnh.
+
+---
+
+### GIAI ĐOẠN 4: GIAO DIỆN BÁO CÁO 2D (3–4 ngày)
+**Mục tiêu:** Hiển thị kết quả đẹp, dễ đọc
+
+| Task | File | Mô tả | Ước lượng |
+|------|------|-------|-----------|
+| 4.1 | `CompatibilityReport.jsx` | Layout tổng thể: header (%), tabs (Tổng Quan / Chi Tiết / Radar / 3D) | 1 ngày |
+| 4.2 | `PalaceComparisonCard.jsx` | Card từng cặp cung: thanh điểm, hành, sao, expand luận giải | 1 ngày |
+| 4.3 | `CompatibilityRadar.jsx` | Biểu đồ radar 2 lớp (Chart.js hoặc SVG tự vẽ) hiển thị điểm theo từng cặp cung | 1 ngày |
+| 4.4 | `index.css` | Styles cho report, cards, radar, responsive, theme-aware | 0.5 ngày |
+| 4.5 | | Animation: điểm số đếm lên, thanh progress fill, fade-in kết quả | 0.5 ngày |
+
+**Deliverable GĐ4:** Giao diện báo cáo hoàn chỉnh 2D, responsive, hoạt động tốt trên mobile.
+
+---
+
+### GIAI ĐOẠN 5: TRỰC QUAN 3D ĐÔI (3–4 ngày)
+**Mục tiêu:** Hiển thị 2 hệ hành tinh trong không gian 3D
+
+| Task | File | Mô tả | Ước lượng |
+|------|------|-------|-----------|
+| 5.1 | `DualChartScene.jsx` | Scene 3D với 2 hệ hành tinh, camera nhìn toàn cảnh | 1.5 ngày |
+| 5.2 | `CompatibilityLines3D.jsx` | Đường nối giữa các cung tương ứng: xanh (hợp), đỏ (khắc), vàng (trung tính), độ dày theo điểm | 1 ngày |
+| 5.3 | | Tái sử dụng `SatelliteStars.jsx` cho cả 2 hệ | 0.5 ngày |
+| 5.4 | | Tương tác: click cung để highlight cặp tương ứng, tooltip thông tin | 0.5 ngày |
+| 5.5 | | Hiệu ứng: particle giữa 2 hệ (tương sinh = hạt vàng bay, xung khắc = tia đỏ) | 0.5 ngày |
+
+**Deliverable GĐ5:** Hai hệ hành tinh 3D với đường nối trực quan, click tương tác.
+
+---
+
+### GIAI ĐOẠN 6: TÍCH HỢP & HOÀN THIỆN (2–3 ngày)
+**Mục tiêu:** Ghép nối, tối ưu, test toàn diện
+
+| Task | Mô tả | Ước lượng |
+|------|-------|-----------|
+| 6.1 | Tích hợp theme: report + 3D dual view phải tương thích cả 3 theme hiện có | 0.5 ngày |
+| 6.2 | Performance: lazy load CompatibilityPage, memoize tính toán engine | 0.5 ngày |
+| 6.3 | Error handling: xử lý edge cases (cung thiếu sao, hành không nhận dạng, file corrupted) | 0.5 ngày |
+| 6.4 | Export: cho phép tải báo cáo dạng PDF hoặc hình ảnh | 0.5 ngày |
+| 6.5 | Test toàn diện: test với 5–10 cặp lá số thực tế, điều chỉnh trọng số | 0.5 ngày |
+| 6.6 | Cập nhật README, ghi chú hướng dẫn sử dụng | 0.3 ngày |
+
+---
+
+## VI. TỔNG KẾT TIMELINE
+
+```
+Tuần 1  ▓▓▓▓▓▓▓▓░░░░░░░░░░░░  GĐ1: Nền tảng (3-4 ngày)
+Tuần 2  ░░░░░░░░▓▓▓▓▓▓▓▓▓▓░░  GĐ2: Engine (4-5 ngày)
+Tuần 3  ░░░░░░░░░░░░░░░░▓▓▓▓  GĐ3: Luận giải (2-3 ngày)
+Tuần 3-4 ▓▓▓▓▓▓▓▓▓░░░░░░░░░░  GĐ4: UI Báo cáo (3-4 ngày)
+Tuần 4  ░░░░░░░░░▓▓▓▓▓▓▓▓░░░  GĐ5: 3D Dual (3-4 ngày)
+Tuần 5  ░░░░░░░░░░░░░░░░░▓▓▓  GĐ6: Hoàn thiện (2-3 ngày)
+
+Tổng: ~18-23 ngày làm việc
+```
+
+### Sơ đồ file mới và file sửa đổi
+
+```
+★ = File mới hoàn toàn
+✏️ = File cần sửa đổi
+
+✏️ src/App.jsx
+✏️ src/index.css
+
+★ src/shared/jsonValidator.js
+★ src/shared/palaceUtils.js
+
+★ src/compatibility/CompatibilityPage.jsx
+★ src/compatibility/DualUploader.jsx
+★ src/compatibility/ModeSelector.jsx
+★ src/compatibility/CompatibilityReport.jsx
+★ src/compatibility/CompatibilityRadar.jsx
+★ src/compatibility/PalaceComparisonCard.jsx
+★ src/compatibility/DualChartScene.jsx
+★ src/compatibility/CompatibilityLines3D.jsx
+
+★ src/compatibility/engine/compatibilityEngine.js
+★ src/compatibility/engine/elementRelations.js
+★ src/compatibility/engine/starCompatibility.js
+★ src/compatibility/engine/palaceMapping.js
+★ src/compatibility/engine/scoringWeights.js
+★ src/compatibility/engine/interpretationRules.js
+
+★ src/compatibility/data/starCatalog.js
+★ src/compatibility/data/elementMatrix.js
+★ src/compatibility/data/interpretationTemplates.js
+
+Tổng: 17 file mới + 2 file sửa đổi
+```
+
+---
