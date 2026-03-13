@@ -43,6 +43,18 @@ export const xungChieuPairs = [
   { palaceIds: [6, 12], name: "Nô Bộc ↔ Huynh Đệ" },
 ];
 
+// Nhị Hợp: 6 cặp cung nhị hợp (Tý-Sửu, Dần-Hợi, Mão-Tuất, Thìn-Dậu, Tị-Thân, Ngọ-Mùi)
+// ID các cung:
+// Tý (8), Sửu (9), Dần (10), Mão (11), Thìn (12), Tỵ (1), Ngọ (2), Mùi (3), Thân (4), Dậu (5), Tuất (6), Hợi (7)
+export const nhiHopPairs = [
+  { palaceIds: [8, 9], name: "Tý ↔ Sửu" },
+  { palaceIds: [10, 7], name: "Dần ↔ Hợi" },
+  { palaceIds: [11, 6], name: "Mão ↔ Tuất" },
+  { palaceIds: [12, 5], name: "Thìn ↔ Dậu" },
+  { palaceIds: [1, 4], name: "Tỵ ↔ Thân" },
+  { palaceIds: [2, 3], name: "Ngọ ↔ Mùi" },
+];
+
 /**
  * Tìm các nhóm Tam Hợp chứa cung đã cho
  */
@@ -58,11 +70,19 @@ export function getXungChieuForPalace(palaceId) {
 }
 
 /**
- * Lấy tất cả palaceId liên quan (tam hợp + xung chiếu) cho 1 cung
+ * Tìm cung Nhị Hợp
+ */
+export function getNhiHopForPalace(palaceId) {
+  return nhiHopPairs.filter(p => p.palaceIds.includes(palaceId));
+}
+
+/**
+ * Lấy tất cả palaceId liên quan (tam hợp + xung chiếu + nhị hợp) cho 1 cung
  */
 export function getRelatedPalaceIds(palaceId) {
   const tamHop = new Set();
   const xungChieu = new Set();
+  const nhiHop = new Set();
 
   getTamHopForPalace(palaceId).forEach(g => {
     g.palaceIds.forEach(id => { if (id !== palaceId) tamHop.add(id); });
@@ -72,5 +92,9 @@ export function getRelatedPalaceIds(palaceId) {
     p.palaceIds.forEach(id => { if (id !== palaceId) xungChieu.add(id); });
   });
 
-  return { tamHop: [...tamHop], xungChieu: [...xungChieu] };
+  getNhiHopForPalace(palaceId).forEach(p => {
+    p.palaceIds.forEach(id => { if (id !== palaceId) nhiHop.add(id); });
+  });
+
+  return { tamHop: [...tamHop], xungChieu: [...xungChieu], nhiHop: [...nhiHop] };
 }

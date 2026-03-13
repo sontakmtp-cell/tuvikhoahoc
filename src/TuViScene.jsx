@@ -6,9 +6,10 @@ import { BlendFunction } from 'postprocessing';
 import * as THREE from 'three';
 import PalaceNav from './PalaceNav';
 import ConnectionLines from './ConnectionLines';
-import { getTamHopForPalace, getXungChieuForPalace } from './relationships';
+import { getTamHopForPalace, getXungChieuForPalace, getNhiHopForPalace } from './relationships';
 import SatelliteStars from './SatelliteStars';
 import { getOrbitTime, updateOrbitTime } from './orbitTime';
+import { calculateExtendedPalaceScore } from './starScores';
 
 /* ── colour palette per element ── */
 const elementColors = {
@@ -313,11 +314,14 @@ const CameraController = () => {
 };
 
 /* ── Info Panel (HTML overlay, right side) ── */
-const InfoPanel = ({ data, onClose }) => {
+const InfoPanel = ({ data, onClose, allPalacesData }) => {
   if (!data) return null;
   const color = elementColors[data.element] || "#ffffff";
   const tamHopGroups = getTamHopForPalace(data.id);
   const xungChieuPairs = getXungChieuForPalace(data.id);
+  const nhiHopPairsArr = getNhiHopForPalace(data.id);
+  
+  const scoreInfo = calculateExtendedPalaceScore(data.id, allPalacesData);
 
   return (
     <div id="info-panel" className="info-panel" style={{ '--accent': color }}>
@@ -353,9 +357,46 @@ const InfoPanel = ({ data, onClose }) => {
             }}>{p.name}</span>
           ))}
         </div>
+        <div className="info-rel-group">
+          <span className="info-rel-icon" style={{ color: '#9370DB' }}>⚄</span>
+          <span className="info-rel-label">Nhị Hợp:</span>
+          {nhiHopPairsArr.map(p => (
+            <span key={p.name} className="info-rel-badge" style={{
+              borderColor: '#9370DB', color: '#B19CD9'
+            }}>{p.name}</span>
+          ))}
+        </div>
       </div>
 
-      <div className="info-row">
+      <div className="info-row" style={{ marginTop: '10px', marginBottom: '5px' }}>
+        <span className="info-label">Độ Cát/Hung (Tính cả Tam hợp, Xung chiếu, Nhị hợp):</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85em', background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '4px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Bản Cung:</span>
+          <span>{scoreInfo.base.total > 0 ? `+${scoreInfo.base.total}` : scoreInfo.base.total}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Tam Hợp:</span>
+          <span>{scoreInfo.tamHop.total > 0 ? `+${Number(scoreInfo.tamHop.total.toFixed(1))}` : Number(scoreInfo.tamHop.total.toFixed(1))}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Xung Chiếu:</span>
+          <span>{scoreInfo.xungChieu.total > 0 ? `+${Number(scoreInfo.xungChieu.total.toFixed(1))}` : Number(scoreInfo.xungChieu.total.toFixed(1))}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Nhị Hợp:</span>
+          <span>{Math.round(scoreInfo.nhiHop.total) > 0 ? `+${Math.round(scoreInfo.nhiHop.total)}` : Math.round(scoreInfo.nhiHop.total)}</span>
+        </div>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', marginTop: '4px', paddingTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
+          <strong>Tổng Điểm:</strong>
+          <strong style={{ color: scoreInfo.final.total >= 0 ? '#00FF7F' : '#FF4444' }}>
+            {scoreInfo.final.total > 0 ? `+${Number(scoreInfo.final.total.toFixed(1))}` : Number(scoreInfo.final.total.toFixed(1))}
+          </strong>
+        </div>
+      </div>
+
+      <div className="info-row" style={{ marginTop: '15px' }}>
         <span className="info-label">Các sao:</span>
       </div>
       <div className="info-stars">
@@ -507,7 +548,7 @@ export default function TuViScene({ data }) {
       />
 
       {/* Info panel overlay */}
-      <InfoPanel data={focusedData} onClose={() => setFocusedId(null)} />
+      <InfoPanel data={focusedData} allPalacesData={data} onClose={() => setFocusedId(null)} />
     </div>
   );
 }
