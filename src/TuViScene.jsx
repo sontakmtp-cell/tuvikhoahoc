@@ -1,10 +1,9 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Html, Stars, Billboard, Text, Sphere } from '@react-three/drei';
+import { MapControls, Html, Stars, Billboard, Text, Sphere } from '@react-three/drei';
 import { EffectComposer, Bloom, ChromaticAberration } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import * as THREE from 'three';
-import { tuViData } from './data';
 import PalaceNav from './PalaceNav';
 import ConnectionLines from './ConnectionLines';
 import { getTamHopForPalace, getXungChieuForPalace } from './relationships';
@@ -408,7 +407,7 @@ const ConnectionToggle = ({ showTamHop, showXungChieu, onToggleTamHop, onToggleX
 };
 
 /* ── Main Scene ── */
-export default function TuViScene() {
+export default function TuViScene({ data }) {
   const [focusedId, setFocusedId] = useState(null);
   const [showTamHop, setShowTamHop] = useState(true);
   const [showXungChieu, setShowXungChieu] = useState(true);
@@ -421,11 +420,11 @@ export default function TuViScene() {
     setFocusedId(null);
   }, []);
 
-  const menhData = tuViData.find(p => p.id === MENH_ID);
-  const orbitingPalaces = tuViData.filter(p => p.id !== MENH_ID);
+  const menhData = data.find(p => p.id === MENH_ID);
+  const orbitingPalaces = data.filter(p => p.id !== MENH_ID);
 
-  const focusedData = focusedId ? tuViData.find(p => p.id === focusedId) : null;
-  const focusedIndex = focusedId ? tuViData.findIndex(p => p.id === focusedId) : null;
+  const focusedData = focusedId ? data.find(p => p.id === focusedId) : null;
+  const focusedIndex = focusedId ? data.findIndex(p => p.id === focusedId) : null;
 
   return (
     <div className="scene-root">
@@ -460,14 +459,14 @@ export default function TuViScene() {
         {/* Connection lines for Tam Hợp & Xung Chiếu */}
         <ConnectionLines
           focusedId={focusedId}
-          palaces={tuViData}
+          palaces={data}
           showTamHop={showTamHop}
           showXungChieu={showXungChieu}
         />
 
         <CameraController focusedIndex={focusedIndex} />
 
-        <OrbitControls
+        <MapControls
           enablePan={true}
           maxPolarAngle={Math.PI / 2 - 0.05}
           minDistance={12}
@@ -493,7 +492,7 @@ export default function TuViScene() {
 
       {/* Navigation sidebar */}
       <PalaceNav
-        palaces={tuViData}
+        palaces={data}
         focusedId={focusedId}
         onSelect={handlePalaceClick}
       />
