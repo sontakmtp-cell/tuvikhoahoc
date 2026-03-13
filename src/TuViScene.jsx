@@ -138,10 +138,16 @@ const Planet = ({ data, index, total, isFocused, paused, onClick, orbitSpeed = 0
   // Use palaceScore to influence speed and size.
   let speedMultiplier = 1;
   let sizeMultiplier = 1;
-  if (palaceScore) {
-    // Speed mapping
-    speedMultiplier = 1 + (palaceScore / 15);
+  if (typeof palaceScore === 'number') {
+    // Speed mapping: faster based on absolute value of score
+    let absScore = Math.abs(palaceScore);
+    speedMultiplier = 1 + (absScore / 15);
     speedMultiplier = Math.max(0.05, Math.min(speedMultiplier, 6.0));
+    
+    // Direction: negative score orbits counter-clockwise
+    if (palaceScore < 0) {
+      speedMultiplier *= -1;
+    }
     
     // Size mapping: -30 -> ~0.5, +30 -> ~1.5
     sizeMultiplier = 1 + (palaceScore / 60);

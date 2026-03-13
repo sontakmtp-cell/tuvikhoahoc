@@ -24,10 +24,15 @@ function getPlanetPosition(palaceId, orbitIndex, totalOrbiting, palacesData, orb
   let speedMultiplier = 1;
   if (palacesData) {
     const scoreInfo = calculateExtendedPalaceScore(palaceId, palacesData);
-    if (scoreInfo) {
+    if (scoreInfo && typeof scoreInfo.final.total === 'number') {
       const palaceScore = scoreInfo.final.total;
-      speedMultiplier = 1 + (palaceScore / 15);
+      let absScore = Math.abs(palaceScore);
+      speedMultiplier = 1 + (absScore / 15);
       speedMultiplier = Math.max(0.05, Math.min(speedMultiplier, 6.0));
+      
+      if (palaceScore < 0) {
+        speedMultiplier *= -1;
+      }
     }
   }
 
