@@ -313,6 +313,62 @@ const CameraController = () => {
   return null;
 };
 
+/* ── Collapsible Description Components ── */
+const CollapsibleSection = ({ title, content, defaultOpen = false }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  
+  return (
+    <div className="collapsible-section">
+      <div className="collapsible-header" onClick={() => setIsOpen(!isOpen)}>
+        <span>{title}</span>
+        <span className={`collapsible-icon ${isOpen ? 'open' : ''}`}>▼</span>
+      </div>
+      <div className={`collapsible-content ${isOpen ? 'open' : ''}`}>
+        {content}
+      </div>
+    </div>
+  );
+};
+
+const ParsedDescription = ({ text }) => {
+  if (!text) return null;
+  
+  // Try to find the splitting point: "Lời giải cho cung..." or "Luận giải:"
+  const splitRegex = /(?:\n\s*)(?:Lời giải|Luận giải)[^\n]*(?:\n|$)/i;
+  const match = text.match(splitRegex);
+  
+  let part1 = "";
+  let part2 = "";
+  
+  if (match) {
+    const splitIndex = match.index;
+    part1 = text.substring(0, splitIndex).trim();
+    part2 = text.substring(splitIndex + match[0].length).trim();
+  } else {
+    // If no clear split, just put everything as "Lời giải cho cung"
+    part2 = text.trim();
+  }
+  
+  return (
+    <div className="collapsible-container">
+      {part1 && (
+        <CollapsibleSection
+          title="Cách xem cung"
+          content={part1}
+          defaultOpen={true}
+        />
+      )}
+      {part2 && (
+        <CollapsibleSection
+          title="Lời giải cho cung"
+          content={part2}
+          defaultOpen={!part1}
+        />
+      )}
+    </div>
+  );
+};
+
 /* ── Info Panel (HTML overlay, right side) ── */
 const InfoPanel = ({ data, onClose, allPalacesData }) => {
   if (!data) return null;
@@ -416,7 +472,7 @@ const InfoPanel = ({ data, onClose, allPalacesData }) => {
 
       {data.detailedDescription && (
         <div className="info-detailed">
-          {data.detailedDescription}
+          <ParsedDescription text={data.detailedDescription} />
         </div>
       )}
     </div>
