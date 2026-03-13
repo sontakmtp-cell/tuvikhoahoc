@@ -1,14 +1,44 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap');
 
+:root {
+  --bg-color: #03050C;
+  --panel-bg: rgba(8, 12, 28, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --text-primary: #e0e0e0;
+}
+
+[data-theme="mystical"] {
+  --bg-color: #070314;
+  --panel-bg: rgba(12, 8, 28, 0.85);
+  --glass-border: rgba(140, 80, 255, 0.15);
+  --text-primary: #e6ddff;
+}
+
+[data-theme="asian"] {
+  --bg-color: #12100e;
+  --panel-bg: rgba(26, 22, 18, 0.85);
+  --glass-border: rgba(210, 180, 140, 0.15);
+  --text-primary: #eadecd;
+}
+
+[data-theme="scifi"] {
+  --bg-color: #000814;
+  --panel-bg: rgba(0, 16, 32, 0.85);
+  --glass-border: rgba(0, 200, 255, 0.2);
+  --text-primary: #d0f0ff;
+}
+
+
 body, html {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: #03050C;
+  background-color: var(--bg-color);
   font-family: 'Inter', sans-serif;
-  color: #e0e0e0;
+  color: var(--text-primary);
+  transition: background-color 1s ease, color 1s ease;
 }
 * {
   box-sizing: border-box;
@@ -19,8 +49,9 @@ body, html {
   position: relative;
   width: 100vw;
   height: 100vh;
-  background: #03050C;
+  background: var(--bg-color);
   overflow: hidden;
+  transition: background 1s ease;
 }
 
 /* ── Palace Navigation Sidebar ── */
@@ -117,10 +148,11 @@ body, html {
   padding: 32px 28px;
   overflow-y: auto;
 
-  background: rgba(8, 12, 28, 0.82);
+  background: var(--panel-bg);
   backdrop-filter: blur(20px);
-  border-left: 1px solid rgba(255, 255, 255, 0.07);
+  border-left: 1px solid var(--glass-border);
   box-shadow: -8px 0 40px rgba(0, 0, 0, 0.5), inset 0 0 60px rgba(var(--accent), 0.02);
+  transition: background 0.5s ease, border-color 0.5s ease;
 
   animation: slideInRight 0.45s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
@@ -505,4 +537,93 @@ body, html {
   border-radius: 8px;
   font-size: 0.8rem;
   backdrop-filter: blur(8px);
+}
+
+/* ── Theme Selector ── */
+.theme-selector {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 200;
+}
+
+.theme-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.theme-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.theme-arrow {
+  font-size: 0.7rem;
+  transition: transform 0.3s ease;
+}
+
+.theme-arrow.open {
+  transform: rotate(180deg);
+}
+
+.theme-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--panel-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: fadeInDown 0.2s ease forwards;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.theme-option.active {
+  background: rgba(255, 255, 255, 0.15);
+  font-weight: 600;
+}
+
+.theme-icon {
+  font-size: 1.1em;
 }

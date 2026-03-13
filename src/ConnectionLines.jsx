@@ -4,6 +4,7 @@ import { Billboard, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { getTamHopForPalace, getXungChieuForPalace } from './relationships';
 import { getOrbitTime } from './orbitTime';
+import { calculateExtendedPalaceScore } from './starScores';
 
 /**
  * Cung Mệnh id – sits at center (0,0,0).
@@ -14,13 +15,25 @@ const MENH_ID = 1;
  * Compute a planet's current position using the shared orbit time.
  * Cung Mệnh (id=1) always returns center. Others orbit around it.
  */
-function getPlanetPosition(palaceId, orbitIndex, totalOrbiting, orbitSpeed = 0.05) {
+function getPlanetPosition(palaceId, orbitIndex, totalOrbiting, palacesData, orbitSpeed = 0.05) {
   if (palaceId === MENH_ID) {
     return new THREE.Vector3(0, 0, 0);
   }
+
+  // Calculate speed multiplier identical to Planet component
+  let speedMultiplier = 1;
+  if (palacesData) {
+    const scoreInfo = calculateExtendedPalaceScore(palaceId, palacesData);
+    if (scoreInfo) {
+      const palaceScore = scoreInfo.final.total;
+      speedMultiplier = 1 + (palaceScore / 15);
+      speedMultiplier = Math.max(0.05, Math.min(speedMultiplier, 6.0));
+    }
+  }
+
   const time = getOrbitTime();
   const orbitRadius = 8 + orbitIndex * 2.8;
-  const speed = orbitSpeed / (0.6 + orbitIndex * 0.12);
+  const speed = (orbitSpeed * speedMultiplier) / (0.6 + orbitIndex * 0.12);
   const initialAngle = (orbitIndex / totalOrbiting) * Math.PI * 2;
   const angle = initialAngle + time * speed;
   return new THREE.Vector3(
@@ -165,7 +178,7 @@ export default function ConnectionLines({ focusedId, palaces, showTamHop = true,
       return () => new THREE.Vector3(0, 0, 0);
     }
     const orbitIdx = orbitingPalaces.findIndex(p => p.id === palaceId);
-    return () => getPlanetPosition(palaceId, orbitIdx, totalOrbiting);
+    return () => getPlanetPosition(palaceId, orbitIdx, totalOrbiting, palaces);
   };
 
   const tamHopGroups = showTamHop ? getTamHopForPalace(focusedId) : [];

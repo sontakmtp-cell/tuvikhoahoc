@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { tuViData } from './data';
 import TuViScene from './TuViScene';
+import { ThemeProvider } from './ThemeContext';
+import ThemeSelector from './ThemeSelector';
 
 function App() {
   const [appData, setAppData] = useState(tuViData);
@@ -31,7 +33,7 @@ function App() {
   };
 
   return (
-    <>
+    <ThemeProvider>
       <div className="upload-container">
         <label htmlFor="file-upload" className="upload-btn">
           Tải dữ liệu lên (.json)
@@ -44,8 +46,9 @@ function App() {
         />
         {errorMsg && <div className="error-msg">{errorMsg}</div>}
       </div>
+      <ThemeSelector />
       <TuViScene data={appData} />
-    </>
+    </ThemeProvider>
   );
 }
 

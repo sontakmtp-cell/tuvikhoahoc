@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { MapControls, Html, Stars, Billboard, Text, Sphere } from '@react-three/drei';
+import { MapControls, Html, Stars, Billboard, Text, Sphere, Grid } from '@react-three/drei';
 import { EffectComposer, Bloom, ChromaticAberration } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import * as THREE from 'three';
@@ -10,6 +10,7 @@ import { getTamHopForPalace, getXungChieuForPalace, getNhiHopForPalace } from '.
 import SatelliteStars from './SatelliteStars';
 import { getOrbitTime, updateOrbitTime } from './orbitTime';
 import { calculateExtendedPalaceScore } from './starScores';
+import { useTheme } from './ThemeContext';
 
 /* ── colour palette per element ── */
 const elementColors = {
@@ -29,23 +30,35 @@ const elementEmissive = {
 };
 
 /* ── Planet Material helpers ── */
-const getPlanetProps = (element, isFocused) => {
+const getPlanetProps = (element, isFocused, activeTheme) => {
   const base = {
     color: elementColors[element] || "#ffffff",
     emissive: elementEmissive[element] || "#ffffff",
     roughness: 0.5,
     metalness: 0.3,
     emissiveIntensity: isFocused ? 1.2 : 0.35,
+    wireframe: activeTheme === 'scifi'
   };
+
+  if (activeTheme === 'mystical') {
+    base.emissiveIntensity = isFocused ? 2.5 : 0.9;
+  } else if (activeTheme === 'asian') {
+    base.roughness = 0.9;
+    base.metalness = 0.2;
+    base.emissiveIntensity = isFocused ? 0.9 : 0.3;
+  } else if (activeTheme === 'scifi') {
+    base.emissiveIntensity = isFocused ? 2.0 : 0.6;
+  }
+
   switch (element) {
     case "Kim":
-      return { ...base, metalness: 0.9, roughness: 0.15 };
+      return { ...base, metalness: activeTheme === 'asian' ? 0.4 : 0.9, roughness: activeTheme === 'asian' ? 0.6 : 0.15 };
     case "Mộc":
       return { ...base, metalness: 0.1, roughness: 0.8 };
     case "Thủy":
       return { ...base, metalness: 0.4, roughness: 0.2, transparent: true, opacity: 0.88 };
     case "Hỏa":
-      return { ...base, metalness: 0.2, roughness: 0.6, emissiveIntensity: isFocused ? 2.0 : 0.7 };
+      return { ...base, metalness: 0.2, roughness: 0.6, emissiveIntensity: isFocused ? (activeTheme === 'mystical' ? 3.0 : 2.0) : (activeTheme === 'mystical' ? 1.2 : 0.7) };
     case "Thổ":
       return { ...base, metalness: 0.15, roughness: 0.85 };
     default:
@@ -115,17 +128,32 @@ const OrbitTimeManager = ({ paused }) => {
 };
 
 /* ── Planet component ── */
-const Planet = ({ data, index, total, isFocused, paused, onClick, orbitSpeed = 0.05 }) => {
+const Planet = ({ data, index, total, isFocused, paused, onClick, orbitSpeed = 0.05, activeTheme, palaceScore }) => {
   const meshRef = useRef();
   const groupRef = useRef();
 
-  // each planet gets its own orbit radius & speed (well-spaced, perfect circles)
+  // each planet gets its own orbit radius & base speed
   const orbitRadius = 8 + index * 2.8;
-  const speed = orbitSpeed / (0.6 + index * 0.12);
+  
+  // Use palaceScore to influence speed and size.
+  let speedMultiplier = 1;
+  let sizeMultiplier = 1;
+  if (palaceScore) {
+    // Speed mapping
+    speedMultiplier = 1 + (palaceScore / 15);
+    speedMultiplier = Math.max(0.05, Math.min(speedMultiplier, 6.0));
+    
+    // Size mapping: -30 -> ~0.5, +30 -> ~1.5
+    sizeMultiplier = 1 + (palaceScore / 60);
+    sizeMultiplier = Math.max(0.6, Math.min(sizeMultiplier, 1.8));
+  }
+  
+  const speed = (orbitSpeed * speedMultiplier) / (0.6 + index * 0.12);
+  const baseSize = 1.5 * sizeMultiplier;
 
   const initialAngle = (index / total) * Math.PI * 2;
   const color = elementColors[data.element] || "#ffffff";
-  const matProps = getPlanetProps(data.element, isFocused);
+  const matProps = getPlanetProps(data.element, isFocused, activeTheme);
 
   // show ring for every 3rd planet or Kim/Thổ elements
   const hasRing = data.element === "Kim" || data.element === "Thổ" || index % 4 === 0;
@@ -165,15 +193,15 @@ const Planet = ({ data, index, total, isFocused, paused, onClick, orbitSpeed = 0
           onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer'; }}
           onPointerOut={(e) => { e.stopPropagation(); document.body.style.cursor = 'auto'; }}
         >
-          <sphereGeometry args={[1.5, 48, 48]} />
+          <sphereGeometry args={[baseSize, 48, 48]} />
           <meshStandardMaterial {...matProps} />
         </mesh>
 
         {/* atmosphere */}
-        <AtmosphereGlow color={color} radius={1.85} />
+        <AtmosphereGlow color={color} radius={baseSize * 1.23} />
 
         {/* optional Saturn ring */}
-        {hasRing && <PlanetaryRing color={color} radius={2.0} />}
+        {hasRing && <PlanetaryRing color={color} radius={baseSize * 1.33} />}
 
         {/* point light on focused planet */}
         {isFocused && <pointLight color={color} intensity={3} distance={12} />}
@@ -188,7 +216,7 @@ const Planet = ({ data, index, total, isFocused, paused, onClick, orbitSpeed = 0
         {/* label */}
         <Billboard>
           <Text
-            position={[0, -2.5, 0]}
+            position={[0, -(baseSize + 1.0), 0]}
             fontSize={isFocused ? 0.75 : 0.5}
             color={isFocused ? "#ffffff" : color}
             anchorX="center"
@@ -207,7 +235,7 @@ const Planet = ({ data, index, total, isFocused, paused, onClick, orbitSpeed = 0
 
 /* ── Cung Mệnh (Central body – replaces Sun) ── */
 const MENH_ID = 1;
-const CungMenh = ({ data, isFocused, onClick }) => {
+const CungMenh = ({ data, isFocused, onClick, activeTheme }) => {
   const meshRef = useRef();
   const coronaRef = useRef();
   const color = elementColors[data.element] || "#3498DB";
@@ -242,11 +270,12 @@ const CungMenh = ({ data, isFocused, onClick }) => {
         <meshStandardMaterial
           color={color}
           emissive={emissive}
-          emissiveIntensity={isFocused ? 3.0 : 2.2}
-          roughness={0.25}
-          metalness={0.4}
+          emissiveIntensity={isFocused ? (activeTheme === 'mystical' ? 4.0 : 3.0) : (activeTheme === 'mystical' ? 3.0 : 2.2)}
+          roughness={activeTheme === 'asian' ? 0.7 : 0.25}
+          metalness={activeTheme === 'asian' ? 0.2 : 0.4}
           transparent
           opacity={0.92}
+          wireframe={activeTheme === 'scifi'}
         />
       </mesh>
 
@@ -508,6 +537,7 @@ export default function TuViScene({ data }) {
   const [focusedId, setFocusedId] = useState(null);
   const [showTamHop, setShowTamHop] = useState(true);
   const [showXungChieu, setShowXungChieu] = useState(true);
+  const { activeTheme } = useTheme();
 
   const handlePalaceClick = useCallback((id) => {
     setFocusedId(prev => prev === id ? null : id);
@@ -531,27 +561,42 @@ export default function TuViScene({ data }) {
 
         <OrbitTimeManager paused={!!focusedId} />
 
-        <Stars radius={150} depth={60} count={8000} factor={5} saturation={0.6} fade speed={1} />
+        {activeTheme === 'mystical' && <Stars radius={150} depth={60} count={8000} factor={5} saturation={0.8} fade speed={1.5} />}
+        {activeTheme === 'asian' && <Stars radius={120} depth={50} count={3000} factor={8} saturation={0.1} fade speed={0.4} />}
+        {activeTheme === 'scifi' && <Stars radius={200} depth={80} count={4000} factor={3} saturation={0} fade speed={0.2} />}
+
+        {activeTheme === 'scifi' && (
+          <Grid infiniteGrid fadeDistance={150} sectionColor="#00ffff" cellColor="#004488" position={[0, -10, 0]} />
+        )}
 
         {/* Cung Mệnh at center */}
         <CungMenh
           data={menhData}
           isFocused={focusedId === MENH_ID}
           onClick={handlePalaceClick}
+          activeTheme={activeTheme}
         />
 
         {/* 11 remaining palaces orbiting around Cung Mệnh */}
-        {orbitingPalaces.map((palace, index) => (
-          <Planet
-            key={palace.id}
-            data={palace}
-            index={index}
-            total={orbitingPalaces.length}
-            isFocused={focusedId === palace.id}
-            paused={!!focusedId}
-            onClick={handlePalaceClick}
-          />
-        ))}
+        {orbitingPalaces.map((palace, index) => {
+          // Calculate score to affect speed
+          const scoreInfo = calculateExtendedPalaceScore(palace.id, data);
+          const totalScore = scoreInfo ? scoreInfo.final.total : 0;
+          
+          return (
+            <Planet
+              key={palace.id}
+              data={palace}
+              index={index}
+              total={orbitingPalaces.length}
+              isFocused={focusedId === palace.id}
+              paused={!!focusedId}
+              onClick={handlePalaceClick}
+              activeTheme={activeTheme}
+              palaceScore={totalScore}
+            />
+          );
+        })}
 
         {/* Connection lines for Tam Hợp & Xung Chiếu */}
         <ConnectionLines
@@ -575,8 +620,8 @@ export default function TuViScene({ data }) {
         {/* Post-processing */}
         <EffectComposer>
           <Bloom
-            intensity={1.2}
-            luminanceThreshold={0.2}
+            intensity={activeTheme === 'mystical' ? 2.0 : (activeTheme === 'scifi' ? 1.2 : 0.8)}
+            luminanceThreshold={activeTheme === 'asian' ? 0.35 : 0.2}
             luminanceSmoothing={0.9}
             mipmapBlur
           />
