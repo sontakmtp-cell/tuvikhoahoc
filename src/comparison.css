@@ -1,0 +1,153 @@
+/* src/comparison.css */
+
+.comparison-uploader {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 10, 30, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(100, 150, 255, 0.3);
+  border-radius: 16px;
+  padding: 24px 32px;
+  color: white;
+  z-index: 100;
+  text-align: center;
+}
+
+.slots-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin: 16px 0;
+}
+
+.file-slot {
+  padding: 16px;
+  border: 2px dashed rgba(255,255,255,0.2);
+  border-radius: 12px;
+  min-width: 180px;
+  transition: border-color 0.3s;
+}
+.file-slot:hover { border-color: rgba(100,170,255,0.6); }
+
+.file-slot h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.file-slot button {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 8px 16px;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+}
+.file-slot button:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.vs-divider {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ff66aa;
+}
+
+.btn-compare {
+  background: linear-gradient(135deg, #66aaff, #ff66aa);
+  border: none;
+  color: white;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.2s;
+}
+.btn-compare:hover { transform: scale(1.05); }
+
+/* Panel kết quả */
+.comparison-panel {
+  position: fixed;
+  right: 20px;
+  top: 20px;
+  width: 340px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: rgba(10, 10, 30, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(100, 150, 255, 0.25);
+  border-radius: 16px;
+  padding: 20px;
+  color: white;
+  z-index: 200;
+}
+.comparison-panel.collapsed {
+  width: auto;
+  max-height: auto;
+}
+
+.panel-header h2 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 20px;
+}
+
+.panel-names {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.panel-toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.total-score-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.verdict {
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.score-row { margin-bottom: 14px; }
+.score-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.score-label { font-weight: 600; font-size: 13px; }
+.score-weight { color: #888; font-size: 11px; }
+.score-value { font-weight: bold; font-size: 14px; }
+
+.score-bar-bg {
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s ease-out;
+}
+
+.score-detail { font-size: 11px; color: #aaa; margin-top: 2px; }
+.score-sublabel {
+  background: rgba(255,255,255,0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
+  font-size: 10px;
+}

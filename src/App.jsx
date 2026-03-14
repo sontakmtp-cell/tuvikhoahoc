@@ -3,6 +3,42 @@ import { tuViData } from './data';
 import TuViScene from './TuViScene';
 import { ThemeProvider } from './ThemeContext';
 import ThemeSelector from './ThemeSelector';
+import { ComparisonProvider, useComparison } from './ComparisonContext';
+import ComparisonUploader from './ComparisonUploader';
+import ComparisonScene from './ComparisonScene';
+import './comparison.css';
+
+function AppContent({ appData, handleFileUpload, errorMsg }) {
+  const { mode } = useComparison();
+
+  return (
+    <div className="app-root" style={{ width: '100%', height: '100vh', position: 'relative' }}>
+      {mode === 'single' && (
+        <>
+          <div className="upload-container" style={{ position: 'absolute', top: 20, left: 20, zIndex: 10 }}>
+            <label htmlFor="file-upload" className="upload-btn">
+              Tải dữ liệu lên (.json)
+            </label>
+            <input 
+              id="file-upload" 
+              type="file" 
+              accept=".json" 
+              onChange={handleFileUpload} 
+              style={{ display: 'none' }}
+            />
+            {errorMsg && <div className="error-msg">{errorMsg}</div>}
+          </div>
+          <ThemeSelector />
+          <TuViScene data={appData} />
+          <ComparisonUploader />
+        </>
+      )}
+      {mode === 'comparison' && (
+        <ComparisonScene />
+      )}
+    </div>
+  );
+}
 
 function App() {
   const [appData, setAppData] = useState(tuViData);
@@ -34,20 +70,9 @@ function App() {
 
   return (
     <ThemeProvider>
-      <div className="upload-container">
-        <label htmlFor="file-upload" className="upload-btn">
-          Tải dữ liệu lên (.json)
-        </label>
-        <input 
-          id="file-upload" 
-          type="file" 
-          accept=".json" 
-          onChange={handleFileUpload} 
-        />
-        {errorMsg && <div className="error-msg">{errorMsg}</div>}
-      </div>
-      <ThemeSelector />
-      <TuViScene data={appData} />
+      <ComparisonProvider>
+        <AppContent appData={appData} handleFileUpload={handleFileUpload} errorMsg={errorMsg} />
+      </ComparisonProvider>
     </ThemeProvider>
   );
 }
