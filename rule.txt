@@ -1,0 +1,1147 @@
+
+
+# HỆ THỐNG SO SÁNH LÁ SỐ TỬ VI — THIẾT KẾ CHI TIẾT
+
+---
+
+## PHẦN 1: LOGIC HOẠT ĐỘNG THEO NGUYÊN LÝ TỬ VI PHƯƠNG ĐÔNG
+
+### 1.1. Các Tầng So Sánh (từ vĩ mô đến vi mô)
+
+Trong Tử Vi Đẩu Số truyền thống, việc luận tương hợp giữa hai người dựa trên **5 tầng** phân tích:
+
+| Tầng | Tên gọi | Trọng số | Mô tả |
+|------|---------|----------|-------|
+| 1 | **Ngũ Hành Nạp Âm** | 25% | So sánh hành Mệnh của hai người (Kim/Mộc/Thủy/Hỏa/Thổ) → Tương Sinh, Tương Khắc, Bình Hòa |
+| 2 | **Địa Chi Cung Mệnh** | 20% | Xét cặp Địa Chi (Tý-Sửu-Dần...) → Tam Hợp, Lục Hợp, Lục Xung, Tứ Hành Xung, Hình-Hại |
+| 3 | **Cung Phu Thê chéo** | 25% | Sao trong cung Phu Thê người A đối chiếu Mệnh người B và ngược lại |
+| 4 | **Chính Tinh đồng cung** | 20% | So sánh chính tinh Cung Mệnh hai người: sao nào gặp nhau → hỗ trợ hay xung đột |
+| 5 | **Sát Tinh & Hung Tinh chéo** | 10% | Kiểm tra hung tinh (Kình, Đà, Không, Kiếp, Hỏa, Linh) có rơi vào cung then chốt của đối phương không |
+
+### 1.2. Chi Tiết Từng Tầng Logic
+
+#### **Tầng 1 — Ngũ Hành Nạp Âm**
+
+```
+Tương Sinh (tốt):   Kim → Thủy → Mộc → Hỏa → Thổ → Kim
+Tương Khắc (xấu):   Kim → Mộc → Thổ → Thủy → Hỏa → Kim
+Bình Hòa (trung bình): Cùng hành
+```
+
+Ma trận điểm:
+
+| | Kim | Mộc | Thủy | Hỏa | Thổ |
+|---|---|---|---|---|---|
+| **Kim** | 50 | -80 | +90 | -70 | +80 |
+| **Mộc** | -80 | 50 | +80 | +90 | -70 |
+| **Thủy** | +90 | +80 | 50 | -80 | -70 |
+| **Hỏa** | -70 | +90 | -80 | 50 | +80 |
+| **Thổ** | +80 | -70 | -70 | +80 | 50 |
+
+#### **Tầng 2 — Địa Chi Cung Mệnh**
+
+```
+Tam Hợp (rất tốt, +90):
+  Thân–Tý–Thìn (Thủy cục)
+  Dần–Ngọ–Tuất (Hỏa cục)
+  Tỵ–Dậu–Sửu (Kim cục)
+  Hợi–Mão–Mùi (Mộc cục)
+
+Lục Hợp (tốt, +75):
+  Tý–Sửu, Dần–Hợi, Mão–Tuất, Thìn–Dậu, Tỵ–Thân, Ngọ–Mùi
+
+Lục Xung (xấu, -85):
+  Tý–Ngọ, Sửu–Mùi, Dần–Thân, Mão–Dậu, Thìn–Tuất, Tỵ–Hợi
+
+Tứ Hành Xung (rất xấu, -70):
+  Dần–Thân–Tỵ–Hợi, Tý–Ngọ–Mão–Dậu, Thìn–Tuất–Sửu–Mùi
+
+Lục Hại (xấu, -60):
+  Tý–Mùi, Sửu–Ngọ, Dần–Tỵ, Mão–Thìn, Thân–Hợi, Dậu–Tuất
+```
+
+#### **Tầng 3 — Cung Phu Thê Chéo**
+
+Đây là tầng **quan trọng nhất** trong luận tình duyên:
+
+- Lấy danh sách chính tinh trong **Cung Phu Thê của A** → Đối chiếu với **Cung Mệnh của B**
+- Lấy danh sách chính tinh trong **Cung Phu Thê của B** → Đối chiếu với **Cung Mệnh của A**
+- Nếu sao Phu Thê của A **cùng nhóm** hoặc **tương sinh** với chính tinh Mệnh B → Tương hợp
+- Nếu **xung khắc** → Bất lợi
+
+Phân nhóm sao theo hành:
+
+```javascript
+const STAR_ELEMENT_MAP = {
+  // Thủy
+  "Thiên Cơ": "Thủy", "Thiên Đồng": "Thủy", "Văn Xương": "Thủy",
+  // Mộc  
+  "Tham Lang": "Mộc", "Cự Môn": "Mộc", "Thiên Lương": "Mộc",
+  // Kim
+  "Vũ Khúc": "Kim", "Thất Sát": "Kim", "Phá Quân": "Kim",
+  // Hỏa
+  "Liêm Trinh": "Hỏa", "Thái Dương": "Hỏa",
+  // Thổ
+  "Thiên Phủ": "Thổ", "Tử Vi": "Thổ", "Thái Âm": "Thổ",
+  "Thiên Tướng": "Thổ", "Thiên Lương": "Thổ"
+};
+```
+
+#### **Tầng 4 — Chính Tinh Đồng Cung/Đối Chiếu**
+
+So sánh chính tinh Cung Mệnh hai người:
+
+```
+Cặp sao tương hợp (ví dụ):
+  Tử Vi + Thiên Phủ → Rất tốt (cùng Thổ, bổ trợ)
+  Thái Dương + Thái Âm → Rất tốt (Nhật Nguyệt giao huy)
+  Thiên Cơ + Thiên Lương → Tốt (Cơ Nguyệt Đồng Lương)
+
+Cặp sao xung khắc (ví dụ):
+  Thất Sát + Phá Quân → Xấu (cùng Kim nhưng sát khí chồng)
+  Liêm Trinh + Tham Lang → Tùy ngữ cảnh (Hỏa-Mộc sinh nhưng tình duyên lận đận)
+```
+
+#### **Tầng 5 — Sát Tinh Chéo**
+
+Kiểm tra các sao hung (Kình Dương, Đà La, Hỏa Tinh, Linh Tinh, Địa Không, Địa Kiếp) của người A có rơi vào cung Mệnh/Phu Thê/Phúc Đức người B không.
+
+---
+
+## PHẦN 2: CHẨN ĐOÁN CÁC MODULE CẦN THAY ĐỔI
+
+### 2.1. File Mới Cần Tạo
+
+```
+src/
+├── compatibility.js          # ⭐ Core: Toàn bộ logic so sánh 5 tầng
+├── ComparisonUploader.jsx    # UI upload 2 file JSON
+├── ComparisonScene.jsx       # Scene 3D hiển thị 2 vũ trụ song song
+├── ComparisonLines.jsx       # Đường kết nối chéo giữa 2 lá số
+├── ComparisonPanel.jsx       # Panel kết quả điểm tương hợp (HTML overlay)
+└── ComparisonContext.jsx     # Context quản lý state so sánh
+```
+
+### 2.2. File Cần Sửa
+
+| File | Mức độ sửa | Chi tiết |
+|------|-----------|----------|
+| `App.jsx` | **Trung bình** | Thêm state quản lý mode (single/comparison), routing |
+| `data.js` | **Nhẹ** | Bổ sung trường `nguHanh`, `diaChi` vào schema mỗi lá số |
+| `relationships.js` | **Trung bình** | Mở rộng thêm hàm cross-chart relationships |
+| `TuViScene.jsx` | **Nhẹ** | Tách render logic để có thể tái sử dụng cho 2 scene |
+| `PalaceNav.jsx` | **Nhẹ** | Thêm toggle chuyển giữa lá số A/B |
+| `starScores.js` | **Nhẹ** | Export thêm bảng phân loại hành của sao |
+
+---
+
+## PHẦN 3: CODE SNIPPETS
+
+### 3.1. `compatibility.js` — Logic Core
+
+```javascript
+// src/compatibility.js
+// ===== HỆ THỐNG SO SÁNH LÁ SỐ TỬ VI =====
+
+// ---- TẦNG 1: NGŨ HÀNH NẠP ÂM ----
+const NGU_HANH_MATRIX = {
+  "Kim":  { "Kim": 50, "Mộc": -80, "Thủy": 90,  "Hỏa": -70, "Thổ": 80  },
+  "Mộc":  { "Kim": -80, "Mộc": 50, "Thủy": 80,  "Hỏa": 90,  "Thổ": -70 },
+  "Thủy": { "Kim": 90,  "Mộc": 80, "Thủy": 50,  "Hỏa": -80, "Thổ": -70 },
+  "Hỏa":  { "Kim": -70, "Mộc": 90, "Thủy": -80, "Hỏa": 50,  "Thổ": 80  },
+  "Thổ":  { "Kim": 80,  "Mộc": -70,"Thủy": -70, "Hỏa": 80,  "Thổ": 50  },
+};
+
+function scoreNguHanh(hanhA, hanhB) {
+  const raw = NGU_HANH_MATRIX[hanhA]?.[hanhB] ?? 0;
+  // Normalize to 0-100
+  return Math.round((raw + 100) / 2);
+}
+
+function labelNguHanh(hanhA, hanhB) {
+  const TUONG_SINH = [
+    ["Kim","Thủy"],["Thủy","Mộc"],["Mộc","Hỏa"],["Hỏa","Thổ"],["Thổ","Kim"]
+  ];
+  const TUONG_KHAC = [
+    ["Kim","Mộc"],["Mộc","Thổ"],["Thổ","Thủy"],["Thủy","Hỏa"],["Hỏa","Kim"]
+  ];
+  if (hanhA === hanhB) return "Bình Hòa";
+  if (TUONG_SINH.some(([a,b]) => 
+    (a === hanhA && b === hanhB) || (a === hanhB && b === hanhA)
+  )) return "Tương Sinh";
+  if (TUONG_KHAC.some(([a,b]) => 
+    (a === hanhA && b === hanhB) || (a === hanhB && b === hanhA)
+  )) return "Tương Khắc";
+  return "Không xác định";
+}
+
+// ---- TẦNG 2: ĐỊA CHI CUNG MỆNH ----
+const DIA_CHI = ["Tý","Sửu","Dần","Mão","Thìn","Tỵ","Ngọ","Mùi","Thân","Dậu","Tuất","Hợi"];
+
+const TAM_HOP = [
+  ["Thân","Tý","Thìn"],
+  ["Dần","Ngọ","Tuất"],
+  ["Tỵ","Dậu","Sửu"],
+  ["Hợi","Mão","Mùi"],
+];
+
+const LUC_HOP = [
+  ["Tý","Sửu"],["Dần","Hợi"],["Mão","Tuất"],
+  ["Thìn","Dậu"],["Tỵ","Thân"],["Ngọ","Mùi"],
+];
+
+const LUC_XUNG = [
+  ["Tý","Ngọ"],["Sửu","Mùi"],["Dần","Thân"],
+  ["Mão","Dậu"],["Thìn","Tuất"],["Tỵ","Hợi"],
+];
+
+const LUC_HAI = [
+  ["Tý","Mùi"],["Sửu","Ngọ"],["Dần","Tỵ"],
+  ["Mão","Thìn"],["Thân","Hợi"],["Dậu","Tuất"],
+];
+
+function scoreDiaChi(chiA, chiB) {
+  if (chiA === chiB) return { score: 60, label: "Tự Hình" };
+  
+  const inTamHop = TAM_HOP.some(group => group.includes(chiA) && group.includes(chiB));
+  if (inTamHop) return { score: 95, label: "Tam Hợp" };
+  
+  const inLucHop = LUC_HOP.some(([a,b]) => 
+    (a === chiA && b === chiB) || (a === chiB && b === chiA));
+  if (inLucHop) return { score: 85, label: "Lục Hợp" };
+  
+  const inLucXung = LUC_XUNG.some(([a,b]) => 
+    (a === chiA && b === chiB) || (a === chiB && b === chiA));
+  if (inLucXung) return { score: 15, label: "Lục Xung" };
+  
+  const inLucHai = LUC_HAI.some(([a,b]) => 
+    (a === chiA && b === chiB) || (a === chiB && b === chiA));
+  if (inLucHai) return { score: 25, label: "Lục Hại" };
+  
+  return { score: 50, label: "Bình thường" };
+}
+
+// ---- TẦNG 3: CUNG PHU THÊ CHÉO ----
+const STAR_ELEMENT = {
+  "Tử Vi": "Thổ", "Thiên Cơ": "Mộc", "Thái Dương": "Hỏa",
+  "Vũ Khúc": "Kim", "Thiên Đồng": "Thủy", "Liêm Trinh": "Hỏa",
+  "Thiên Phủ": "Thổ", "Thái Âm": "Thủy", "Tham Lang": "Thủy",
+  "Cự Môn": "Thủy", "Thiên Tướng": "Thủy", "Thiên Lương": "Mộc",
+  "Thất Sát": "Kim", "Phá Quân": "Thủy",
+};
+
+function scorePhuTheCheo(chartA, chartB) {
+  const phuTheA = chartA["Phu Thê"]?.chinhTinh ?? [];
+  const phuTheB = chartB["Phu Thê"]?.chinhTinh ?? [];
+  const menhA = chartA["Mệnh"]?.chinhTinh ?? [];
+  const menhB = chartB["Mệnh"]?.chinhTinh ?? [];
+
+  let totalScore = 0;
+  let count = 0;
+
+  // Phu Thê A ↔ Mệnh B
+  for (const starPT of phuTheA) {
+    const hanhPT = STAR_ELEMENT[starPT.name] ?? "Thổ";
+    for (const starM of menhB) {
+      const hanhM = STAR_ELEMENT[starM.name] ?? "Thổ";
+      totalScore += scoreNguHanh(hanhPT, hanhM);
+      count++;
+    }
+  }
+
+  // Phu Thê B ↔ Mệnh A
+  for (const starPT of phuTheB) {
+    const hanhPT = STAR_ELEMENT[starPT.name] ?? "Thổ";
+    for (const starM of menhA) {
+      const hanhM = STAR_ELEMENT[starM.name] ?? "Thổ";
+      totalScore += scoreNguHanh(hanhPT, hanhM);
+      count++;
+    }
+  }
+
+  return count > 0 ? Math.round(totalScore / count) : 50;
+}
+
+// ---- TẦNG 4: CHÍNH TINH ĐỒNG CUNG ----
+const STAR_SYNERGY = {
+  "Tử Vi|Thiên Phủ": 95,
+  "Thái Dương|Thái Âm": 95,
+  "Thiên Cơ|Thiên Lương": 85,
+  "Thiên Đồng|Thiên Lương": 80,
+  "Tử Vi|Tham Lang": 60,
+  "Thất Sát|Phá Quân": 20,
+  "Liêm Trinh|Tham Lang": 30,
+  "Liêm Trinh|Thất Sát": 25,
+  "Vũ Khúc|Phá Quân": 30,
+};
+
+function scoreChinhTinhPair(chartA, chartB) {
+  const menhA = chartA["Mệnh"]?.chinhTinh ?? [];
+  const menhB = chartB["Mệnh"]?.chinhTinh ?? [];
+  
+  let totalScore = 0;
+  let count = 0;
+
+  for (const sA of menhA) {
+    for (const sB of menhB) {
+      const key1 = `${sA.name}|${sB.name}`;
+      const key2 = `${sB.name}|${sA.name}`;
+      if (STAR_SYNERGY[key1] !== undefined) {
+        totalScore += STAR_SYNERGY[key1];
+        count++;
+      } else if (STAR_SYNERGY[key2] !== undefined) {
+        totalScore += STAR_SYNERGY[key2];
+        count++;
+      } else {
+        // Fallback: so sánh hành của 2 sao
+        const hA = STAR_ELEMENT[sA.name] ?? "Thổ";
+        const hB = STAR_ELEMENT[sB.name] ?? "Thổ";
+        totalScore += scoreNguHanh(hA, hB);
+        count++;
+      }
+    }
+  }
+
+  return count > 0 ? Math.round(totalScore / count) : 50;
+}
+
+// ---- TẦNG 5: SÁT TINH CHÉO ----
+const HUNG_TINH = ["Kình Dương","Đà La","Hỏa Tinh","Linh Tinh","Địa Không","Địa Kiếp"];
+const SENSITIVE_PALACES = ["Mệnh", "Phu Thê", "Phúc Đức"];
+
+function scoreSatTinhCheo(chartA, chartB) {
+  let penalty = 0;
+
+  for (const palace of SENSITIVE_PALACES) {
+    const phuTinhB = chartB[palace]?.phuTinh ?? [];
+    for (const star of phuTinhB) {
+      if (HUNG_TINH.includes(star.name)) {
+        penalty += 15; // Mỗi hung tinh rơi vào cung nhạy cảm của đối phương
+      }
+    }
+    const phuTinhA = chartA[palace]?.phuTinh ?? [];
+    for (const star of phuTinhA) {
+      if (HUNG_TINH.includes(star.name)) {
+        penalty += 15;
+      }
+    }
+  }
+
+  return Math.max(0, 100 - penalty);
+}
+
+// ---- TỔNG HỢP ----
+export function computeCompatibility(chartA, chartB, metaA, metaB) {
+  // metaA/B = { nguHanh: "Kim", diaChi: "Tý" }
+  
+  const t1 = scoreNguHanh(metaA.nguHanh, metaB.nguHanh);
+  const t1Label = labelNguHanh(metaA.nguHanh, metaB.nguHanh);
+  const t2Obj = scoreDiaChi(metaA.diaChi, metaB.diaChi);
+  const t3 = scorePhuTheCheo(chartA, chartB);
+  const t4 = scoreChinhTinhPair(chartA, chartB);
+  const t5 = scoreSatTinhCheo(chartA, chartB);
+
+  const WEIGHTS = { t1: 0.25, t2: 0.20, t3: 0.25, t4: 0.20, t5: 0.10 };
+
+  const finalScore = Math.round(
+    t1 * WEIGHTS.t1 +
+    t2Obj.score * WEIGHTS.t2 +
+    t3 * WEIGHTS.t3 +
+    t4 * WEIGHTS.t4 +
+    t5 * WEIGHTS.t5
+  );
+
+  return {
+    finalScore,
+    breakdown: {
+      nguHanh:     { score: t1, weight: "25%", label: t1Label, detail: `${metaA.nguHanh} ↔ ${metaB.nguHanh}` },
+      diaChi:      { score: t2Obj.score, weight: "20%", label: t2Obj.label, detail: `${metaA.diaChi} ↔ ${metaB.diaChi}` },
+      phuTheCheo:  { score: t3, weight: "25%", label: t3 >= 70 ? "Tương Hợp" : t3 >= 40 ? "Trung Bình" : "Bất Lợi" },
+      chinhTinh:   { score: t4, weight: "20%", label: t4 >= 70 ? "Hỗ Trợ" : t4 >= 40 ? "Trung Bình" : "Xung Đột" },
+      satTinh:     { score: t5, weight: "10%", label: t5 >= 70 ? "Ít Hung Tinh" : "Nhiều Hung Tinh" },
+    },
+    verdict: finalScore >= 80 ? "Rất Tương Hợp 💕" :
+             finalScore >= 60 ? "Khá Tương Hợp 🤝" :
+             finalScore >= 40 ? "Trung Bình ⚖️" :
+             finalScore >= 20 ? "Khá Xung Khắc ⚡" :
+                                "Rất Xung Khắc 🔥"
+  };
+}
+```
+
+### 3.2. `ComparisonContext.jsx` — Quản Lý State
+
+```jsx
+// src/ComparisonContext.jsx
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { computeCompatibility } from './compatibility';
+
+const ComparisonContext = createContext(null);
+
+export function ComparisonProvider({ children }) {
+  const [chartA, setChartA] = useState(null);  // planetsData format
+  const [chartB, setChartB] = useState(null);
+  const [metaA, setMetaA] = useState(null);    // { nguHanh, diaChi, name }
+  const [metaB, setMetaB] = useState(null);
+  const [mode, setMode] = useState('single');   // 'single' | 'comparison'
+
+  const loadChart = useCallback((which, data, meta) => {
+    if (which === 'A') { setChartA(data); setMetaA(meta); }
+    else { setChartB(data); setMetaB(meta); }
+  }, []);
+
+  // Memoize kết quả tính toán — chỉ re-calculate khi data thay đổi
+  const result = useMemo(() => {
+    if (!chartA || !chartB || !metaA || !metaB) return null;
+    return computeCompatibility(chartA, chartB, metaA, metaB);
+  }, [chartA, chartB, metaA, metaB]);
+
+  const enterComparison = useCallback(() => setMode('comparison'), []);
+  const exitComparison = useCallback(() => {
+    setMode('single');
+    setChartB(null);
+    setMetaB(null);
+  }, []);
+
+  const value = useMemo(() => ({
+    chartA, chartB, metaA, metaB,
+    result, mode,
+    loadChart, enterComparison, exitComparison
+  }), [chartA, chartB, metaA, metaB, result, mode, loadChart, enterComparison, exitComparison]);
+
+  return (
+    <ComparisonContext.Provider value={value}>
+      {children}
+    </ComparisonContext.Provider>
+  );
+}
+
+export const useComparison = () => useContext(ComparisonContext);
+```
+
+### 3.3. `ComparisonUploader.jsx` — Giao Diện Upload
+
+```jsx
+// src/ComparisonUploader.jsx
+import { useCallback, useRef } from 'react';
+import { useComparison } from './ComparisonContext';
+
+function FileSlot({ label, which, onLoaded }) {
+  const inputRef = useRef(null);
+
+  const handleFile = useCallback((e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const json = JSON.parse(evt.target.result);
+        // Expect: { meta: { nguHanh, diaChi, name }, planets: { ...planetsData } }
+        if (!json.meta || !json.planets) {
+          alert('File JSON phải chứa trường "meta" và "planets"');
+          return;
+        }
+        onLoaded(which, json.planets, json.meta);
+      } catch {
+        alert('File JSON không hợp lệ!');
+      }
+    };
+    reader.readAsText(file);
+  }, [which, onLoaded]);
+
+  return (
+    <div className="file-slot">
+      <h3>{label}</h3>
+      <button onClick={() => inputRef.current?.click()}>
+        📂 Chọn File JSON
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".json"
+        style={{ display: 'none' }}
+        onChange={handleFile}
+      />
+    </div>
+  );
+}
+
+export default function ComparisonUploader() {
+  const { loadChart, chartA, chartB, metaA, metaB, enterComparison } = useComparison();
+
+  return (
+    <div className="comparison-uploader">
+      <h2>🔮 So Sánh Lá Số Tử Vi</h2>
+      <p>Tải lên 2 file JSON lá số để xem độ tương hợp</p>
+      
+      <div className="slots-container">
+        <FileSlot
+          label={metaA ? `✅ ${metaA.name}` : "Lá Số A (Bản thân)"}
+          which="A"
+          onLoaded={loadChart}
+        />
+        <div className="vs-divider">VS</div>
+        <FileSlot
+          label={metaB ? `✅ ${metaB.name}` : "Lá Số B (Đối phương)"}
+          which="B"
+          onLoaded={loadChart}
+        />
+      </div>
+
+      {chartA && chartB && (
+        <button className="btn-compare" onClick={enterComparison}>
+          ⚡ So Sánh Ngay
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+### 3.4. `ComparisonScene.jsx` — Scene 3D Song Song
+
+```jsx
+// src/ComparisonScene.jsx
+import { useRef, useMemo, memo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Text, Html, Line } from '@react-three/drei';
+import { useComparison } from './ComparisonContext';
+import SatelliteStars from './SatelliteStars';
+import ComparisonLines from './ComparisonLines';
+import ComparisonPanel from './ComparisonPanel';
+import * as THREE from 'three';
+
+// ---- Khối Cung (dùng lại logic từ TuViScene nhưng tham số hóa) ----
+const PalaceSphere = memo(function PalaceSphere({ name, position, color, size = 1.5 }) {
+  const meshRef = useRef();
+  
+  // Không dùng useFrame cho mesh tĩnh → tránh re-render
+  return (
+    <group position={position}>
+      <mesh ref={meshRef}>
+        <sphereGeometry args={[size, 32, 32]} />
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={0.3}
+          transparent
+          opacity={0.8}
+        />
+      </mesh>
+      <Text
+        position={[0, size + 0.8, 0]}
+        fontSize={0.6}
+        color="white"
+        anchorX="center"
+        anchorY="bottom"
+      >
+        {name}
+      </Text>
+    </group>
+  );
+});
+
+// ---- Dựng 1 "vũ trụ" lá số (tái sử dụng cho A và B) ----
+const ChartUniverse = memo(function ChartUniverse({ chartData, offset, color, label }) {
+  // offset: [x, y, z] dịch chuyển toàn bộ vũ trụ này sang trái/phải
+  
+  const palacePositions = useMemo(() => {
+    if (!chartData) return [];
+    return Object.entries(chartData).map(([name, data]) => ({
+      name,
+      position: [
+        data.position.x + offset[0],
+        data.position.y + offset[1],
+        data.position.z + offset[2],
+      ],
+      chinhTinh: data.chinhTinh,
+      phuTinh: data.phuTinh,
+    }));
+  }, [chartData, offset]);
+
+  return (
+    <group>
+      {/* Label tên lá số */}
+      <Text
+        position={[offset[0], 30, offset[2]]}
+        fontSize={2}
+        color={color}
+        anchorX="center"
+      >
+        {label}
+      </Text>
+
+      {/* Các cung */}
+      {palacePositions.map((palace) => (
+        <group key={palace.name}>
+          <PalaceSphere
+            name={palace.name}
+            position={palace.position}
+            color={color}
+            size={palace.name === "Mệnh" ? 2.5 : 1.5}
+          />
+          {/* Sao vệ tinh */}
+          <SatelliteStars
+            stars={[...(palace.chinhTinh || []), ...(palace.phuTinh || [])]}
+            center={palace.position}
+            baseOrbitRadius={4}
+          />
+        </group>
+      ))}
+    </group>
+  );
+});
+
+// ---- Đường kết nối tương hợp/xung khắc giữa 2 vũ trụ ----
+const CrossLinks = memo(function CrossLinks({ chartA, chartB, result, offsetA, offsetB }) {
+  const links = useMemo(() => {
+    if (!chartA || !chartB || !result) return [];
+
+    const lines = [];
+    // Kết nối Mệnh A ↔ Mệnh B
+    const posMA = chartA["Mệnh"]?.position;
+    const posMB = chartB["Mệnh"]?.position;
+    if (posMA && posMB) {
+      lines.push({
+        start: [posMA.x + offsetA[0], posMA.y + offsetA[1], posMA.z + offsetA[2]],
+        end:   [posMB.x + offsetB[0], posMB.y + offsetB[1], posMB.z + offsetB[2]],
+        color: result.finalScore >= 60 ? '#00ff88' : '#ff4444',
+        label: 'Mệnh ↔ Mệnh',
+      });
+    }
+
+    // Kết nối Phu Thê A ↔ Mệnh B
+    const posPTA = chartA["Phu Thê"]?.position;
+    if (posPTA && posMB) {
+      lines.push({
+        start: [posPTA.x + offsetA[0], posPTA.y + offsetA[1], posPTA.z + offsetA[2]],
+        end:   [posMB.x + offsetB[0], posMB.y + offsetB[1], posMB.z + offsetB[2]],
+        color: result.breakdown.phuTheCheo.score >= 60 ? '#88ccff' : '#ff8844',
+        label: 'Phu Thê A → Mệnh B',
+      });
+    }
+
+    // Kết nối Phu Thê B ↔ Mệnh A
+    const posPTB = chartB["Phu Thê"]?.position;
+    if (posPTB && posMA) {
+      lines.push({
+        start: [posPTB.x + offsetB[0], posPTB.y + offsetB[1], posPTB.z + offsetB[2]],
+        end:   [posMA.x + offsetA[0], posMA.y + offsetA[1], posMA.z + offsetA[2]],
+        color: result.breakdown.phuTheCheo.score >= 60 ? '#88ccff' : '#ff8844',
+        label: 'Phu Thê B → Mệnh A',
+      });
+    }
+
+    return lines;
+  }, [chartA, chartB, result, offsetA, offsetB]);
+
+  return (
+    <>
+      {links.map((link, i) => (
+        <Line
+          key={i}
+          points={[link.start, link.end]}
+          color={link.color}
+          lineWidth={2}
+          dashed
+          dashScale={5}
+          dashSize={1}
+          dashOffset={0}
+        />
+      ))}
+    </>
+  );
+});
+
+// ---- Main Comparison Scene ----
+export default function ComparisonScene() {
+  const { chartA, chartB, metaA, metaB, result } = useComparison();
+
+  // Offset 2 vũ trụ sang 2 bên
+  const OFFSET_A = useMemo(() => [-45, 0, 0], []);
+  const OFFSET_B = useMemo(() => [45, 0, 0], []);
+
+  if (!chartA || !chartB) return null;
+
+  return (
+    <>
+      <Canvas
+        camera={{ position: [0, 60, 120], fov: 55 }}
+        style={{ width: '100vw', height: '100vh' }}
+        gl={{ antialias: true }}
+      >
+        {/* Lighting */}
+        <ambientLight intensity={0.4} />
+        <pointLight position={[-45, 50, 50]} intensity={1.2} color="#66aaff" />
+        <pointLight position={[45, 50, 50]} intensity={1.2} color="#ff66aa" />
+
+        {/* Camera Control — enableDamping để mượt */}
+        <OrbitControls
+          enableDamping
+          dampingFactor={0.05}
+          minDistance={20}
+          maxDistance={200}
+        />
+
+        {/* Vũ trụ Lá số A */}
+        <ChartUniverse
+          chartData={chartA}
+          offset={OFFSET_A}
+          color="#66aaff"
+          label={`🔵 ${metaA?.name || 'Lá Số A'}`}
+        />
+
+        {/* Vũ trụ Lá số B */}
+        <ChartUniverse
+          chartData={chartB}
+          offset={OFFSET_B}
+          color="#ff66aa"
+          label={`🔴 ${metaB?.name || 'Lá Số B'}`}
+        />
+
+        {/* Đường kết nối chéo */}
+        <CrossLinks
+          chartA={chartA}
+          chartB={chartB}
+          result={result}
+          offsetA={OFFSET_A}
+          offsetB={OFFSET_B}
+        />
+
+        {/* Starfield background */}
+        <StarField />
+      </Canvas>
+
+      {/* HTML Overlay — Panel kết quả */}
+      {result && <ComparisonPanel result={result} metaA={metaA} metaB={metaB} />}
+    </>
+  );
+}
+
+// ---- Background sao trang trí (performance-safe) ----
+const StarField = memo(function StarField() {
+  const points = useMemo(() => {
+    const positions = new Float32Array(3000 * 3);
+    for (let i = 0; i < 3000; i++) {
+      positions[i * 3]     = (Math.random() - 0.5) * 400;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 400;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 400;
+    }
+    return positions;
+  }, []);
+
+  return (
+    <points>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={3000}
+          array={points}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <pointsMaterial size={0.3} color="#ffffff" sizeAttenuation transparent opacity={0.6} />
+    </points>
+  );
+});
+```
+
+### 3.5. `ComparisonPanel.jsx` — Panel Kết Quả (HTML Overlay)
+
+```jsx
+// src/ComparisonPanel.jsx
+import { memo, useState, useCallback } from 'react';
+
+const ScoreBar = memo(function ScoreBar({ label, score, weight, detail, subLabel }) {
+  const barColor = score >= 70 ? '#00dd66' : score >= 40 ? '#ffaa00' : '#ff4444';
+  
+  return (
+    <div className="score-row">
+      <div className="score-header">
+        <span className="score-label">{label}</span>
+        <span className="score-weight">({weight})</span>
+        <span className="score-value" style={{ color: barColor }}>{score}/100</span>
+      </div>
+      <div className="score-bar-bg">
+        <div
+          className="score-bar-fill"
+          style={{ width: `${score}%`, backgroundColor: barColor }}
+        />
+      </div>
+      <div className="score-detail">
+        {subLabel && <span className="score-sublabel">{subLabel}</span>}
+        {detail && <span className="score-detail-text">{detail}</span>}
+      </div>
+    </div>
+  );
+});
+
+export default memo(function ComparisonPanel({ result, metaA, metaB }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const toggle = useCallback(() => setCollapsed(c => !c), []);
+
+  if (!result) return null;
+
+  const { finalScore, breakdown, verdict } = result;
+  const ringColor = finalScore >= 70 ? '#00dd66' : finalScore >= 40 ? '#ffaa00' : '#ff4444';
+
+  return (
+    <div className={`comparison-panel ${collapsed ? 'collapsed' : ''}`}>
+      <button className="panel-toggle" onClick={toggle}>
+        {collapsed ? '📊 Mở' : '✕'}
+      </button>
+
+      {!collapsed && (
+        <>
+          <div className="panel-header">
+            <h2>Kết Quả Tương Hợp</h2>
+            <p className="panel-names">
+              <span style={{ color: '#66aaff' }}>{metaA?.name}</span>
+              {' '}⚡{' '}
+              <span style={{ color: '#ff66aa' }}>{metaB?.name}</span>
+            </p>
+          </div>
+
+          {/* Vòng tròn điểm tổng */}
+          <div className="total-score-ring">
+            <svg viewBox="0 0 120 120" width="140" height="140">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#333" strokeWidth="8" />
+              <circle
+                cx="60" cy="60" r="52"
+                fill="none"
+                stroke={ringColor}
+                strokeWidth="8"
+                strokeDasharray={`${finalScore * 3.27} 327`}
+                strokeLinecap="round"
+                transform="rotate(-90 60 60)"
+              />
+              <text x="60" y="55" textAnchor="middle" fill="white" fontSize="28" fontWeight="bold">
+                {finalScore}
+              </text>
+              <text x="60" y="75" textAnchor="middle" fill="#aaa" fontSize="11">
+                / 100
+              </text>
+            </svg>
+            <p className="verdict">{verdict}</p>
+          </div>
+
+          {/* Chi tiết 5 tầng */}
+          <div className="breakdown">
+            <ScoreBar
+              label="🌊 Ngũ Hành Nạp Âm"
+              score={breakdown.nguHanh.score}
+              weight={breakdown.nguHanh.weight}
+              subLabel={breakdown.nguHanh.label}
+              detail={breakdown.nguHanh.detail}
+            />
+            <ScoreBar
+              label="🐉 Địa Chi Cung Mệnh"
+              score={breakdown.diaChi.score}
+              weight={breakdown.diaChi.weight}
+              subLabel={breakdown.diaChi.label}
+              detail={breakdown.diaChi.detail}
+            />
+            <ScoreBar
+              label="💍 Phu Thê Chéo"
+              score={breakdown.phuTheCheo.score}
+              weight={breakdown.phuTheCheo.weight}
+              subLabel={breakdown.phuTheCheo.label}
+            />
+            <ScoreBar
+              label="⭐ Chính Tinh Đối Chiếu"
+              score={breakdown.chinhTinh.score}
+              weight={breakdown.chinhTinh.weight}
+              subLabel={breakdown.chinhTinh.label}
+            />
+            <ScoreBar
+              label="💀 Sát Tinh Chéo"
+              score={breakdown.satTinh.score}
+              weight={breakdown.satTinh.weight}
+              subLabel={breakdown.satTinh.label}
+            />
+          </div>
+        </>
+      )}
+    </div>
+  );
+});
+```
+
+### 3.6. Sửa `App.jsx` — Tích Hợp Mode So Sánh
+
+```jsx
+// src/App.jsx (phần bổ sung)
+import { ComparisonProvider, useComparison } from './ComparisonContext';
+import { ThemeProvider } from './ThemeContext';
+import ComparisonUploader from './ComparisonUploader';
+import ComparisonScene from './ComparisonScene';
+import TuViScene from './TuViScene';
+
+function AppContent() {
+  const { mode } = useComparison();
+
+  return (
+    <div className="app-root">
+      {mode === 'single' && (
+        <>
+          <TuViScene />
+          <ComparisonUploader /> {/* Floating button/panel */}
+        </>
+      )}
+      {mode === 'comparison' && (
+        <ComparisonScene />
+      )}
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <ComparisonProvider>
+        <AppContent />
+      </ComparisonProvider>
+    </ThemeProvider>
+  );
+}
+```
+
+### 3.7. Schema JSON File Upload (Mẫu)
+
+```json
+{
+  "meta": {
+    "name": "Nguyễn Văn A",
+    "nguHanh": "Kim",
+    "diaChi": "Tý",
+    "gioiTinh": "Nam",
+    "namSinh": 1990
+  },
+  "planets": {
+    "Mệnh": {
+      "position": { "x": 0, "y": 0, "z": 0 },
+      "chinhTinh": [
+        { "name": "Thiên Phủ", "score": 90, "description": "..." }
+      ],
+      "phuTinh": [
+        { "name": "Hóa Khoa", "score": 75, "description": "..." }
+      ]
+    },
+    "Phu Thê": {
+      "position": { "x": 25, "y": 0, "z": -15 },
+      "chinhTinh": [
+        { "name": "Thái Âm", "score": 85, "description": "..." }
+      ],
+      "phuTinh": []
+    }
+  }
+}
+```
+
+### 3.8. CSS Bổ Sung
+
+```css
+/* Thêm vào App.css hoặc tạo comparison.css */
+
+.comparison-uploader {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 10, 30, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(100, 150, 255, 0.3);
+  border-radius: 16px;
+  padding: 24px 32px;
+  color: white;
+  z-index: 100;
+  text-align: center;
+}
+
+.slots-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin: 16px 0;
+}
+
+.file-slot {
+  padding: 16px;
+  border: 2px dashed rgba(255,255,255,0.2);
+  border-radius: 12px;
+  min-width: 180px;
+  transition: border-color 0.3s;
+}
+.file-slot:hover { border-color: rgba(100,170,255,0.6); }
+
+.vs-divider {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ff66aa;
+}
+
+.btn-compare {
+  background: linear-gradient(135deg, #66aaff, #ff66aa);
+  border: none;
+  color: white;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.2s;
+}
+.btn-compare:hover { transform: scale(1.05); }
+
+/* Panel kết quả */
+.comparison-panel {
+  position: fixed;
+  right: 20px;
+  top: 20px;
+  width: 340px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: rgba(10, 10, 30, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(100, 150, 255, 0.25);
+  border-radius: 16px;
+  padding: 20px;
+  color: white;
+  z-index: 200;
+}
+.comparison-panel.collapsed {
+  width: auto;
+  max-height: auto;
+}
+
+.panel-toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.total-score-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.verdict {
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.score-row { margin-bottom: 14px; }
+.score-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.score-label { font-weight: 600; font-size: 13px; }
+.score-weight { color: #888; font-size: 11px; }
+.score-value { font-weight: bold; font-size: 14px; }
+
+.score-bar-bg {
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s ease-out;
+}
+
+.score-detail { font-size: 11px; color: #aaa; margin-top: 2px; }
+.score-sublabel {
+  background: rgba(255,255,255,0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
+  font-size: 10px;
+}
+```
+
+---
+
+## PHẦN 4: SƠ ĐỒ LUỒNG DỮ LIỆU TỔNG THỂ
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      USER INTERFACE                         │
+│                                                             │
+│  ┌──────────────────┐        ┌──────────────────┐          │
+│  │ Upload JSON A    │        │ Upload JSON B    │          │
+│  │ (ComparisonUp-   │        │ (ComparisonUp-   │          │
+│  │  loader.jsx)     │        │  loader.jsx)     │          │
+│  └────────┬─────────┘        └────────┬─────────┘          │
+│           │                           │                     │
+│           ▼                           ▼                     │
+│  ┌─────────────────────────────────────────────┐           │
+│  │         ComparisonContext.jsx                │           │
+│  │  ┌──────────┐  ┌──────────┐  ┌───────────┐ │           │
+│  │  │ chartA   │  │ chartB   │  │ metaA/B   │ │           │
+│  │  └────┬─────┘  └────┬─────┘  └─────┬─────┘ │           │
+│  │       │              │              │        │           │
+│  │       └──────────────┼──────────────┘        │           │
+│  │                      ▼                       │           │
+│  │           compatibility.js                   │           │
+│  │  ┌───────────────────────────────────────┐   │           │
+│  │  │ Tầng 1: Ngũ Hành Nạp Âm     (25%)    │   │           │
+│  │  │ Tầng 2: Địa Chi Cung Mệnh   (20%)    │   │           │
+│  │  │ Tầng 3: Phu Thê Chéo        (25%)    │   │           │
+│  │  │ Tầng 4: Chính Tinh Đối Chiếu (20%)   │   │           │
+│  │  │ Tầng 5: Sát Tinh Chéo       (10%)    │   │           │
+│  │  └───────────────┬───────────────────┘   │   │           │
+│  │                  ▼                       │   │           │
+│  │          result (memoized)               │   │           │
+│  └──────────────────┬──────────────────────-┘   │           │
+│                     │                           │           │
+│      ┌──────────────┼──────────────┐            │           │
+│      ▼              ▼              ▼            │           │
+│ ┌─────────┐  ┌───────────┐  ┌──────────────┐   │           │
+│ │CompScene│  │CrossLinks │  │CompPanel     │   │           │
+│ │ (3D×2)  │  │ (Line3D)  │  │(HTML overlay)│   │           │
+│ └─────────┘  └───────────┘  └──────────────┘   │           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## PHẦN 5: GHI CHÚ HIỆU NĂNG (PERFORMANCE)
+
+| Kỹ thuật | Áp dụng ở đâu | Giải thích |
+|----------|---------------|------------|
+| `memo()` | Tất cả sub-component 3D | Tránh re-render khi parent thay đổi state không liên quan |
+| `useMemo` | `palacePositions`, `result`, `starfield` | Chỉ tính lại khi dependency thực sự thay đổi |
+| `useCallback` | Các handler trong Context | Giữ reference ổn định, tránh trigger re-render con |
+| Tách `useFrame` | Chỉ trong `SatelliteStars` (animation xoay) | Không đặt `useFrame` ở component cha → tránh cascade re-render |
+| `bufferAttribute` | `StarField` background | Render 3000 điểm sao bằng 1 draw call thay vì 3000 mesh |
+| HTML overlay tách riêng | `ComparisonPanel` nằm ngoài `<Canvas>` | DOM rendering không ảnh hưởng WebGL frame rate |
+
+---
+
+## PHẦN 6: TỔNG KẾT CÁC MODULE
+
+| # | File | Loại | Vai trò |
+|---|------|------|---------|
+| 1 | `compatibility.js` | **MỚI** | Logic core 5 tầng so sánh tử vi |
+| 2 | `ComparisonContext.jsx` | **MỚI** | State management cho mode so sánh |
+| 3 | `ComparisonUploader.jsx` | **MỚI** | UI upload 2 file JSON |
+| 4 | `ComparisonScene.jsx` | **MỚI** | Canvas 3D song song 2 vũ trụ |
+| 5 | `ComparisonPanel.jsx` | **MỚI** | Panel kết quả HTML overlay |
+| 6 | `App.jsx` | **SỬA** | Wrap Provider, switch mode |
+| 7 | `data.js` | **SỬA NHẸ** | Thêm `meta` schema (nguHanh, diaChi) |
+| 8 | `relationships.js` | **SỬA NHẸ** | Export thêm cross-chart mapping |
+| 9 | `SatelliteStars.jsx` | **GIỮ NGUYÊN** | Tái sử dụng cho cả 2 vũ trụ |
+
+Toàn bộ thiết kế trên đảm bảo:
+- ✅ **Tuân thủ nguyên lý Tử Vi Đẩu Số phương Đông** (Ngũ Hành, Địa Chi, Tam Hợp, Lục Xung, Cung Phu Thê...)
+- ✅ **Chuẩn React Functional Component** + `@react-three/fiber`
+- ✅ **Tối ưu hiệu năng** — không re-render không cần thiết, tách DOM/WebGL
+- ✅ **Mở rộng được** — thêm tầng logic mới chỉ cần sửa `compatibility.js` và thêm trọng số

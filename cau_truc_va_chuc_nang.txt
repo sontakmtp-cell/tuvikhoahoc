@@ -1,0 +1,114 @@
+TÀI LIỆU CẤU TRÚC VÀ CHỨC NĂNG ỨNG DỤNG TỬ VI 3D KHOA HỌC
+=========================================================
+
+I. TÓM TẮT CHỨC NĂNG ỨNG DỤNG
+---------------------------------------------------------
+1. Mô phỏng Vũ trụ Tử Vi Trực quan 3D:
+   - Hệ thống hóa lá số tử vi truyền thống (2D) thành đồ họa 3D tương tác.
+   - Đặt "Cung Mệnh" làm trung tâm. Các tiểu cung, chính tinh và phụ tinh được mô phỏng dưới dạng vệ tinh xoay quanh trung tâm, giúp hình dung rõ ràng mối quan hệ mật thiết giữa các sao và cung.
+
+2. Hệ thống Đánh giá Sự Cường/Nhược Tự Động:
+   - Tự động đánh giá và chấm điểm sức mạnh của từng sao dựa trên dữ liệu.
+   - Ứng dụng mô phỏng trực quan tốc độ của các hành tinh/sao theo điểm số: sao/cung xoay nhanh chậm trên quỹ đạo tương ứng với độ chi phối mạnh hay yếu, mang lại góc nhìn động.
+
+3. Trải nghiệm Tương tác Chuyên sâu (Interactive 3D):
+   - Người dùng có thể kéo, xoay góc nhìn camera trong không gian 3D. 
+   - Click vào từng sao hoặc cung (vệ tinh/hành tinh) để hiển thị box thông tin đọc phần giải nghĩa chi tiết các cụm sao, sao lẻ và cung chức năng.
+
+4. Quản lý Theme & Điều Hướng:
+   - Hỗ trợ đổi Theme (giao diện) linh hoạt để phù hợp với mắt người dùng.
+   - Thanh Menu điều hướng giúp nhảy nhanh góc nhìn đến các khung cụ thể (các cung) trong không gian 3D.
+
+5. Cập nhật và Phân tích Dữ liệu:
+   - Tích hợp scripts cập nhật parsing dữ liệu nguồn từ các file văn bản (TXT/JSON) thành javascript base.
+   - Giúp mở rộng thêm các lá số, hoặc các bình chú của các nền móng triết học khác.
+
+II. CẤU TRÚC THƯ MỤC VÀ TỆP TIN CHÍNH
+---------------------------------------------------------
+[tuvi-app] Tên dự án
+ │
+ ├── public/                   # Các tài nguyên dùng chung, hình ảnh, model, icon không biên dịch
+ │
+ ├── src/                      # (Thư mục mã nguồn quan trọng)
+ │    ├── App.jsx              # Khởi tạo khung của App chính
+ │    ├── App.css, index.css   # Các file style định hình layout và thiết kế tĩnh
+ │    ├── main.jsx             # Entry point của React DOM
+ │    │
+ │    ├── [Các Thành Phần Render 3D / Component]
+ │    │   ├── TuViScene.jsx      # Core Component: Dựng toàn bộ không gian Canvas 3D, Máy Chụp, Ánh sáng, Camera Control, Canvas Render
+ │    │   ├── SatelliteStars.jsx # Đảm nhiệm việc hiển thị các sao bay quanh trong Cung, render hình học
+ │    │   ├── ConnectionLines.jsx# Vẽ các tia năng lượng, đường kết nối tam hợp, nhị hợp... giữa các cung
+ │    │   ├── PalaceNav.jsx      # Giao diện thanh menu điều hướng 2D overlay để người dùng click tới các Cung nhanh
+ │    │   ├── ThemeSelector.jsx  # Giao diện cho phép chọn đổi background vũ trụ / theme (nếu có)
+ │    │   └── ThemeContext.jsx   # Hệ thống quản lý trạng thái chia sẻ Theme (Sáng/Tối/Custom) cho cả App
+ │    │
+ │    ├── [Các Tệp Logic & Dữ Liệu]
+ │    │   ├── data.js            # Dữ liệu gốc chứa nội dung bình giải chi tiết Cung/Sao, điểm số các chính tinh, phụ tinh...
+ │    │   ├── orbitTime.js       # Tính toán tốc độ quỹ đạo mô phỏng (orbit speed/time) giúp cho vũ trụ chuyển động
+ │    │   ├── starScores.js      # Hệ thống điểm số, phân nhóm hành tinh, xác định mức độ quan trọng/đỉnh cao của tinh hệ
+ │    │   └── relationships.js   # Logic ánh xạ các cung tam hợp, nhị hợp tương tác trong bản đồ
+ │
+ ├── update_data.cjs           # Script back-end (Node) hỗ trợ parse và nhúng tự động dữ liệu văn bản vào data.js
+ ├── package.json              # Khai báo các thư viện (React, Three.js, R3F...) và scripts chạy dự án
+ ├── index.html                # Tệp gốc khi trỏ domain vào
+ └── vite.config.js            # Cấu hình biên dịch Vite
+
+III. LOGIC HOẠT ĐỘNG CHÍNH VÀ LUỒNG DỮ LIỆU (DATA FLOW)
+---------------------------------------------------------
+1. Cấu trúc Khởi tạo Không gian 3D:
+   - Ứng dụng Khởi tạo Canvas (React Three Fiber) bên trong TuViScene.jsx.
+   - Thiết lập Hệ tọa độ (Coordinates), Ánh sáng (Lights), Máy ảnh (Camera) và tính năng điều khiển góc nhìn không gian (Orbit Controls) để người xem tự do kéo, thu phóng bản đồ.
+
+2. Ánh xạ Dữ liệu Thực thể (Parsing & Mapping):
+   - Load dữ liệu JSON từ data.js chứa danh sách 12 Cung chức năng (Mệnh, Phụ Mẫu, Phúc Đức...). Trong mỗi cung có chứa mảng Chính tinh, Phụ tinh, Điểm số, Vị trí và giải nghĩa chi tiết.
+   - Xếp Cung Mệnh làm trung tâm vũ trụ (Toạ độ 0,0,0). Các cung còn lại (thể hiện bằng các khối cầu - Sphere) sẽ được tính toán vị trí sắp xếp trên hệ tọa độ phân bổ ra xung quanh theo các góc phần tư.
+
+3. Tính Toán Chuyển động và Động lực Quỹ đạo (Physics/Orbit):
+   - Đánh giá Điểm: Thông qua starScores.js, hệ thống đánh giá cường độ sức mạnh của từng ngôi sao/tinh đẩu.
+   - Áp dụng vào 3D: Dựa trên điểm số, orbitTime.js được gọi để tạo ra các Time/Speed Variable. Component SatelliteStars.jsx sẽ gắn các animation xoay (useFrame) vào các sao, đảm bảo sao nào mang yếu tố chi phối mạnh mẽ/điểm cao sẽ di chuyển quỹ đạo nhanh hơn và ngược lại.
+
+4. Tương tác và Giao Diện Trồng Lấp (UI Overlays):
+   - Kết hợp HTML UI đè lên trên nền 3D. Khi click (Raycast intersection) vào một ngôi sao hoặc một hành tinh cung, Component 3D sẽ truyền ID dữ liệu về State của React.
+   - Cửa sổ hiển thị thông tin bằng công nghệ DOM sẽ mở ra, trích xuất text từ data.js cho phép cuộn đọc lời bình giải dễ dàng mà không làm lag môi trường 3D. Thanh PalaceNav cũng thực hiện chức năng nhảy góc quay Camera theo cơ chế tương tự.
+
+5. Hệ thống Tam Hợp và Nhị Hợp (Relationships Lines):
+   - File relationships.js định nghĩa mạng lưới kết nối năng lượng giữa các cung có ảnh hưởng qua lại (Ví dụ: Mệnh - Tài - Quan, Phụ Mẫu - Tật Ách).
+   - Module ConnectionLines.jsx lấy tọa độ thực thời gian (Real-time pos) của các cung vẽ nên các tia Line3D nối với nhau như màn lưới chòm sao.
+
+IV. CÔNG NGHỆ CHÍNH (TECH STACK) ĐỂ AI NẮM RÕ
+---------------------------------------------------------
+1. Framework / Lõi: 
+   - React 19 (Hooks, Context API).
+   - Vite 8 (Trình bundler siêu tốc).
+2. Xử lý đồ hoạ 3D:
+   - Three.js (^0.183.x) - Lõi đồ họa 3D.
+   - @react-three/fiber (^9.5.x) - React ecosystem cho Three.js, giúp viết code 3D theo dạng component declarative (chuẩn React).
+   - @react-three/drei (^10.7.x) - Bộ Component phụ trợ như OrbitControls, Text, Html overlays...
+   - @react-three/postprocessing (^3.0.x) - Xử lý hiệu ứng hình ảnh hậu kỳ (Blooming, Glow...) cho vũ trụ.
+
+V. CẤU TRÚC DỮ LIỆU ĐIỂN HÌNH (data.js) - BẢN THU GỌN
+---------------------------------------------------------
+Toàn bộ logic dựng hình hoạt động xoay quanh cấu trúc JSON dạng:
+export const planetsData = {
+  "Mệnh": {
+    "position": { "x": 0, "y": 0, "z": 0 }, 
+    "chinhTinh": [{ "name": "Thiên Phủ", "score": 90, "description": "..." }],
+    "phuTinh": [{ "name": "Hóa Khoa", "score": 75, "description": "..." }]
+  },
+  "Phụ Mẫu": {
+    "position": { "x": 0, "y": 20, "z": -35 },
+    "chinhTinh": [{ "name": "Thái Âm", "score": 85, "description": "..." }],
+    "phuTinh": []
+  }
+}
+
+VI. LỜI NHẮN / HƯỚNG DẪN DÀNH CHO AI NHẬN TASK
+---------------------------------------------------------
+(PROMPT CONTEXT FOR AI)
+"Tôi đang cung cấp cho bạn cấu trúc của một dự án web React - React Three Fiber (R3F) mô phỏng Vũ trụ Tử Vi 3D.
+- Ứng dụng đã hoàn thiện luồng cơ bản (dựng không gian 3D, đọc được file dữ liệu, có raycaster để click hiện chữ HTML over Canvas, có animation xoay trục, đường Line3D nối các cung).
+- Mục tiêu tiếp theo: tôi muốn bổ sung thêm Hệ thống So sánh Lá Số (Tình Duyên / Đối Tác). Nhiều người xem Tử Vi để biết xem mình và người yêu, hoặc đối tác làm ăn có hợp nhau không. Ý tưởng: Cho phép người dùng tải lên 2 tệp JSON cùng lúc để so sánh sự xung khắc hoặc tương hợp. Khai thác nhu cầu rất lớn của người dùng về việc xem tương hợp, tăng tính lan truyền và ứng dụng thực tế. Bạn hãy mô tả chi tiết logic hoạt động của tính năng này cho tôi, yêu cầu phải đảm bảo tuân thủ nguyên lí tử vi theo quan niệm phương đông
+- Bạn (AI nhận task) hãy đọc cấu trúc trên để hình dung luồng dữ liệu, sau đó:
+  1) Chẩn đoán các module nào cần thay đổi cho tính năng mới.
+  2) Chỉ nên đề xuất code (snippets) viết theo chuẩn `@react-three/fiber` / React Functional Components.
+  3) Lưu ý hiệu năng (performance), tránh re-render React không cần thiết từ useFrame."
